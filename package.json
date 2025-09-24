@@ -1,0 +1,51 @@
+{
+  "name": "nasa-eyes-on-earth-clone",
+  "version": "1.0.0",
+  "description": "A functional clone of NASA's Eyes on the Earth visualization tool",
+  "private": true,
+  "dependencies": {
+    "@babel/runtime": "^7.28.4",
+    "@emotion/unitless": "^0.10.0",
+    "@react-three/drei": "^9.88.13",
+    "@react-three/fiber": "^8.15.11",
+    "@types/three": "^0.160.0",
+    "axios": "^1.6.0",
+    "chart.js": "^4.4.0",
+    "d3": "^7.8.5",
+    "moment": "^2.29.4",
+    "react": "^18.2.0",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "satellite.js": "^5.0.0",
+    "styled-components": "^6.1.1",
+    "three": "^0.160.1"
+  },
+  "overrides": {
+    "three": "^0.160.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}

@@ -193,7 +193,7 @@ const dataLayers = [
 export default function Sidebar({ onSatelliteSelect }) {
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState('');
-  const { satellites, loading } = useData();
+  const { satellites, loading, error } = useData();
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -219,13 +219,49 @@ export default function Sidebar({ onSatelliteSelect }) {
         />
       </Section>
 
-      <Section>
-        <h3>Asteroids ({filtered.length})</h3>
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-            Loading asteroids...
-          </div>
-        ) : (
+            <Section>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3>Asteroids ({filtered.length})</h3>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  style={{
+                    background: 'rgba(0, 229, 255, 0.2)',
+                    border: '1px solid rgba(0, 229, 255, 0.5)',
+                    color: '#00e5ff',
+                    padding: '5px 10px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
+                  Loading asteroids...
+                </div>
+              ) : error ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
+                  <div style={{ marginBottom: '10px' }}>❌ Error Loading Data</div>
+                  <div style={{ fontSize: '12px', color: '#ccc' }}>{error}</div>
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    style={{
+                      background: 'rgba(255, 107, 107, 0.2)',
+                      border: '1px solid rgba(255, 107, 107, 0.5)',
+                      color: '#ff6b6b',
+                      padding: '8px 16px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      marginTop: '10px'
+                    }}
+                  >
+                    🔄 Retry
+                  </button>
+                </div>
+              ) : (
           filtered.map(asteroid => (
             <SatelliteItem
               key={asteroid.id}

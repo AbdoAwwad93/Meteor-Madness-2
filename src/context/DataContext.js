@@ -45,10 +45,18 @@ export function DataProvider({ children }) {
   const loadSatellites = async () => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERROR' }); // Clear previous errors
+      
       const asteroids = await asteroidService.getAsteroids();
+
+      if (asteroids.length === 0) {
+        throw new Error('No asteroids with real orbital data found. All API calls failed.');
+      }
+
       dispatch({ type: 'SET_SATELLITES', payload: asteroids });
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.message });
+      dispatch({ type: 'SET_ERROR', payload: `Failed to load real asteroid data: ${error.message}` });
+      dispatch({ type: 'SET_SATELLITES', payload: [] }); // Clear asteroids on error
     }
   };
 
@@ -56,7 +64,13 @@ export function DataProvider({ children }) {
 
   useEffect(() => {
     loadSatellites();
-    // Remove climate data loading since we're focusing on asteroids
+    
+        // Refresh asteroid positions every 5 minutes for real-time updates
+        const interval = setInterval(() => {
+          loadSatellites();
+        }, 5 * 60 * 1000); // 5 minutes
+    
+    return () => clearInterval(interval);
   }, []);
 
   const value = {

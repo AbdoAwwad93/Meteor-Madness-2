@@ -16,7 +16,6 @@ function Earth({ activeDataLayer, textures = {} }) {
       meshRef.current.rotation.y = (currentTime.getTime() / 86400000) * Math.PI * 2;
       // Debug: log that Earth is rendering
       if (state.clock.elapsedTime < 1) {
-        console.log('Earth is rendering, position:', meshRef.current.position);
       }
     }
   });
@@ -44,56 +43,88 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
   useEffect(() => {
     camera.position.set(0, 0, 20);
     camera.lookAt(0, 0, 0);
-    console.log('Camera positioned at:', camera.position);
   }, [camera]);
 
   // Handle asteroid selection and camera movement
   useEffect(() => {
-    if (selectedAsteroid && asteroids && controlsRef.current && isFocusedMode) {
+    if (selectedAsteroid && asteroids && controlsRef.current) {
       const asteroid = asteroids.find(a => a.id === selectedAsteroid.id);
       if (asteroid) {
         setIsTransitioning(true);
         
-        // Calculate asteroid position (same logic as in AsteroidRenderer but deterministic)
+        // Use real asteroid position if available
         let asteroidPosition = new THREE.Vector3();
         
-        // Create a deterministic random seed based on asteroid ID
-        const seed = asteroid.id ? asteroid.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 1000;
-        const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1;
-        
-        if (asteroid.orbit) {
-          const orbitProgress = asteroid.orbitProgress || seededRandom(seed);
-          const angle = orbitProgress * Math.PI * 2;
-          const a = 8 + seededRandom(seed + 1) * 4; // Deterministic distance
-          const e = asteroid.orbit.eccentricity || 0.1;
-          const i = (asteroid.orbit.inclination || 0) * Math.PI / 180;
-          
-          const r = a * (1 - e * e) / (1 + e * Math.cos(angle));
-          const x = r * Math.cos(angle);
-          const y = r * Math.sin(angle) * Math.cos(i);
-          const z = r * Math.sin(angle) * Math.sin(i);
-          
-          asteroidPosition.set(x, y, z);
+        if (asteroid.realPosition) {
+          // Use the calculated real position
+          asteroidPosition.copy(asteroid.realPosition);
         } else {
-          const distance = 8 + seededRandom(seed + 2) * 4;
-          const theta = seededRandom(seed + 3) * Math.PI * 2;
-          const phi = seededRandom(seed + 4) * Math.PI;
+          // Fallback to calculated position using orbital mechanics
           
-          asteroidPosition.set(
-            distance * Math.sin(phi) * Math.cos(theta),
-            distance * Math.cos(phi),
-            distance * Math.sin(phi) * Math.sin(theta)
-          );
+          if (asteroid.orbit && asteroid.orbit.semiMajorAxis) {
+            // Use orbital mechanics calculation
+            const orbit = asteroid.orbit;
+            const currentTime = new Date();
+            const epochTime = new Date((orbit.epoch - 2440587.5) * 86400000);
+            const timeSinceEpoch = (currentTime.getTime() - epochTime.getTime()) / 86400000;
+            
+            const meanMotion = Math.sqrt(1.32712440018e11 / Math.pow(orbit.semiMajorAxis * 149597870.7, 3)) * 86400;
+            const meanAnomaly = (orbit.meanAnomaly * Math.PI / 180 + meanMotion * timeSinceEpoch) % (2 * Math.PI);
+            
+            // Solve Kepler's equation
+            let eccentricAnomaly = meanAnomaly;
+            for (let i = 0; i < 10; i++) {
+              const f = eccentricAnomaly - orbit.eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly;
+              const fPrime = 1 - orbit.eccentricity * Math.cos(eccentricAnomaly);
+              eccentricAnomaly = eccentricAnomaly - f / fPrime;
+            }
+            
+            // Calculate true anomaly
+            const cosE = Math.cos(eccentricAnomaly);
+            const sinE = Math.sin(eccentricAnomaly);
+            const sqrtOneMinusESq = Math.sqrt(1 - orbit.eccentricity * orbit.eccentricity);
+            const cosNu = (cosE - orbit.eccentricity) / (1 - orbit.eccentricity * cosE);
+            const sinNu = (sqrtOneMinusESq * sinE) / (1 - orbit.eccentricity * cosE);
+            const trueAnomaly = Math.atan2(sinNu, cosNu);
+            
+            // Calculate distance
+            const r = orbit.semiMajorAxis * (1 - orbit.eccentricity * orbit.eccentricity) / (1 + orbit.eccentricity * Math.cos(trueAnomaly));
+            
+            // Convert to scene units (1 AU = 100 units)
+            const rScene = r * 100;
+            
+            // Calculate position in orbital plane
+            const xOrb = rScene * Math.cos(trueAnomaly);
+            const yOrb = rScene * Math.sin(trueAnomaly);
+            const zOrb = 0;
+            
+            // Apply orbital inclination and orientation
+            const i = orbit.inclination * Math.PI / 180;
+            const Omega = orbit.longitudeOfAscendingNode * Math.PI / 180;
+            const omega = orbit.argumentOfPerihelion * Math.PI / 180;
+            
+            // Rotate to heliocentric coordinates
+            const x = xOrb * Math.cos(omega) - yOrb * Math.sin(omega);
+            const y = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.cos(i);
+            const z = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.sin(i);
+            
+            // Final rotation by longitude of ascending node
+            const xFinal = x * Math.cos(Omega) - y * Math.sin(Omega);
+            const yFinal = x * Math.sin(Omega) + y * Math.cos(Omega);
+            const zFinal = z;
+            
+            asteroidPosition.set(xFinal, yFinal, zFinal);
+          }
         }
         
-        // Position camera to focus on asteroid as main object (much closer for focused view)
+        // Calculate camera position - closer for focused view
         const direction = asteroidPosition.clone().normalize();
-        const distance = 1.5; // Much closer distance for focused asteroid view
+        const distance = isFocusedMode ? 5 : 15; // Closer when focused, further when just selected
         const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance));
         
         // Animate camera to new position
         const startPosition = camera.position.clone();
-        const startTarget = controlsRef.current.target.clone();
+        const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0);
         const duration = 2000; // 2 seconds
         const startTime = Date.now();
         
@@ -109,9 +140,11 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
           // Interpolate camera position
           camera.position.lerpVectors(startPosition, cameraPosition, easeInOut);
           
-          // Interpolate target (look at asteroid)
-          controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOut);
-          controlsRef.current.update();
+          // Interpolate target (look at asteroid) - only if controls exist
+          if (controlsRef.current) {
+            controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOut);
+            controlsRef.current.update();
+          }
           
           if (progress < 1) {
             requestAnimationFrame(animateCamera);
@@ -122,15 +155,15 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
         
         animateCamera();
       }
-    } else if (!isFocusedMode && controlsRef.current) {
-      // Reset camera to Earth view
-      setIsTransitioning(true);
-      const startPosition = camera.position.clone();
-      const startTarget = controlsRef.current.target.clone();
-      const targetPosition = new THREE.Vector3(0, 0, 20);
-      const targetTarget = new THREE.Vector3(0, 0, 0);
-      const duration = 2000; // 2 seconds
-      const startTime = Date.now();
+        } else if (!selectedAsteroid && controlsRef.current) {
+          // Reset camera to Earth view when no asteroid is selected
+          setIsTransitioning(true);
+          const startPosition = camera.position.clone();
+          const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0);
+          const targetPosition = new THREE.Vector3(0, 0, 20);
+          const targetTarget = new THREE.Vector3(0, 0, 0);
+          const duration = 2000; // 2 seconds
+          const startTime = Date.now();
       
       const animateCamera = () => {
         const elapsed = Date.now() - startTime;
@@ -144,9 +177,11 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
         // Interpolate camera position
         camera.position.lerpVectors(startPosition, targetPosition, easeInOut);
         
-        // Interpolate target (look at Earth)
-        controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOut);
-        controlsRef.current.update();
+        // Interpolate target (look at Earth) - only if controls exist
+        if (controlsRef.current) {
+          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOut);
+          controlsRef.current.update();
+        }
         
         if (progress < 1) {
           requestAnimationFrame(animateCamera);
@@ -169,7 +204,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
       panSpeed={0.5}
       rotateSpeed={0.4}
       minDistance={1}
-      maxDistance={100}
+          maxDistance={500}
       enabled={!isTransitioning} // Disable controls during transition
     />
   );
@@ -193,7 +228,6 @@ function MilkyWayBackground() {
   const [milkyWayTexture, setMilkyWayTexture] = useState(null);
 
   useEffect(() => {
-    console.log('Creating Milky Way background...');
     
     // Always create procedural Milky Way texture (more reliable)
     const canvas = document.createElement('canvas');
@@ -265,11 +299,9 @@ function MilkyWayBackground() {
     
     const texture = new THREE.CanvasTexture(canvas);
     setMilkyWayTexture(texture);
-    console.log('Milky Way texture created successfully');
   }, []);
 
   if (!milkyWayTexture) {
-    console.log('Milky Way texture not ready yet');
     return null;
   }
 
@@ -326,7 +358,6 @@ export default function EarthVisualization({ selectedSatellite, activeDataLayer,
   const [isLoaded, setIsLoaded] = useState(true); // Always show Earth
   const [loadedTextures, setLoadedTextures] = useState({});
   
-  console.log('EarthVisualization satellites:', satellites?.length || 0, satellites);
 
   useEffect(() => {
     const loader = new THREE.TextureLoader();
@@ -377,17 +408,14 @@ export default function EarthVisualization({ selectedSatellite, activeDataLayer,
             return;
           }
           const url = urlList[idx];
-          console.log('Attempting to load texture:', url);
           loader.load(
             url,
             (tex) => {
               setCommonTextureProps(tex);
-              console.log('Loaded texture:', url);
               resolve(tex);
             },
             undefined,
             () => {
-              console.warn('Failed to load texture, trying next:', url);
               tryNext(idx + 1);
             }
           );
@@ -440,7 +468,6 @@ export default function EarthVisualization({ selectedSatellite, activeDataLayer,
     setLoadedTextures({ dayMap: immediateProcedural });
 
     (async () => {
-      console.log('Starting texture loading with fallbacks...');
       const [dayMap, nightMap, cloudsMap, milkyWay] = await Promise.all([
         loadFirstAvailable(candidates.dayMap),
         loadFirstAvailable(candidates.nightMap),

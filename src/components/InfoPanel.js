@@ -60,7 +60,7 @@ const Header = styled.div`
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
-    background: ${props => props.status === 'Safe' ? 'var(--success)' : 'var(--danger)'};
+    background: ${props => props.$status === 'Safe' ? 'var(--success)' : 'var(--danger)'};
   }
 `;
 
@@ -207,8 +207,8 @@ export default function InfoPanel({ asteroid, onClose }) {
   };
 
   return (
-    <PanelContainer status={asteroid.status}>
-      <Header status={asteroid.status}>
+    <PanelContainer $status={asteroid.status}>
+      <Header $status={asteroid.status}>
         <h2>{asteroid.name}</h2>
         <div className="type">{asteroid.type}</div>
         <div className="status">{asteroid.status}</div>

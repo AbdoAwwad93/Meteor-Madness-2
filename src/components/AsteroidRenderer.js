@@ -15,8 +15,8 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
   const clonedScene = useMemo(() => {
     if (gltf?.scene) {
       const cloned = gltf.scene.clone();
-      // Scale the model to appropriate size for asteroids around Earth
-      cloned.scale.setScalar(0.001); // Larger scale to make asteroids more visible
+      // Scale the model to small size for asteroids around Earth
+      cloned.scale.setScalar(0.0005); // Small size, no difference when selected
 
       // Make the asteroid brighter by modifying materials
       cloned.traverse((child) => {
@@ -24,23 +24,23 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
           // Clone the material to avoid affecting other instances
           child.material = child.material.clone();
 
-          // Make it brighter
+          // Make asteroids consistently colored
           if (child.material.color) {
-            child.material.color.multiplyScalar(2.5); // Increase brightness
+            child.material.color.multiplyScalar(2.5); // Normal brightness for all
           }
 
-          // Add emissive glow
+          // Add subtle emissive glow for all asteroids
           child.material.emissive = new THREE.Color(0x332211);
-          child.material.emissiveIntensity = isSelected ? 0.3 : 0.1;
+          child.material.emissiveIntensity = 0.1;
 
-          // Increase shininess
+          // Consistent shininess for all asteroids
           if (child.material.shininess !== undefined) {
             child.material.shininess = 100;
           }
         }
       });
 
-      console.log('Cloned GLB scene created with scale:', cloned.scale);
+      // Debug logging removed for production
       setModelLoaded(true);
       return cloned;
     }
@@ -59,13 +59,13 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
       {clonedScene ? (
         <primitive object={clonedScene} />
       ) : (
-        // Fallback to simple asteroid geometry while loading - brighter colors
+        // Fallback to simple asteroid geometry while loading
         <mesh>
-          <sphereGeometry args={[0.1, 8, 6]} />
+          <sphereGeometry args={[0.05, 8, 6]} />
           <meshPhongMaterial
-            color={isSelected ? '#ffaa88' : '#ccaa77'}
+            color="#ccaa77"
             shininess={50}
-            emissive={isSelected ? '#442211' : '#221100'}
+            emissive="#221100"
           />
         </mesh>
       )}
@@ -78,53 +78,27 @@ function Asteroid({ asteroid, isSelected, onSelect }) {
   const position = useRef(new THREE.Vector3());
   const rotation = useRef(new THREE.Euler());
 
-  console.log('Rendering asteroid:', asteroid.name, 'with orbit:', asteroid.orbit);
+  // Debug logging removed for production
 
-  // Calculate fixed position once when component mounts
+  // Calculate position - ONLY use real orbital data
   useMemo(() => {
-    // Create a deterministic random seed based on asteroid ID (same as camera controller)
-    const seed = asteroid.id ? asteroid.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 1000;
-    const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1;
-
-    if (asteroid.orbit) {
-      // Use asteroid's orbit progress to determine fixed angle
-      const orbitProgress = asteroid.orbitProgress || seededRandom(seed);
-      const angle = orbitProgress * Math.PI * 2;
-
-      // Orbital parameters - deterministic based on asteroid ID
-      const a = 8 + seededRandom(seed + 1) * 4; // 8-12 units from Earth
-      const e = asteroid.orbit.eccentricity || 0.1; // Eccentricity
-      const i = (asteroid.orbit.inclination || 0) * Math.PI / 180; // Inclination
-
-      // Calculate fixed position in orbital plane
-      const r = a * (1 - e * e) / (1 + e * Math.cos(angle));
-      const x = r * Math.cos(angle);
-      const y = r * Math.sin(angle) * Math.cos(i);
-      const z = r * Math.sin(angle) * Math.sin(i);
-
-      position.current.set(x, y, z);
-
-      console.log(`Asteroid ${asteroid.name} fixed position:`, { x, y, z, distance: Math.sqrt(x*x + y*y + z*z) });
+    if (asteroid.hasRealOrbitalData && asteroid.realPosition) {
+      // Use calculated real position from orbital mechanics
+      position.current.copy(asteroid.realPosition);
     } else {
-      // If no orbit data, place asteroid at a fixed deterministic position around Earth
-      const distance = 8 + seededRandom(seed + 2) * 4; // 8-12 units from Earth
-      const theta = seededRandom(seed + 3) * Math.PI * 2;
-      const phi = seededRandom(seed + 4) * Math.PI;
-
-      position.current.set(
-        distance * Math.sin(phi) * Math.cos(theta),
-        distance * Math.cos(phi),
-        distance * Math.sin(phi) * Math.sin(theta)
-      );
+      // NO FALLBACK - throw error if no real data
+      throw new Error(`Asteroid ${asteroid.name} missing real orbital data`);
     }
 
     // Set initial rotation (deterministic)
+    const seed = asteroid.id ? asteroid.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 1000;
+    const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1;
     rotation.current.set(
       seededRandom(seed + 5) * Math.PI,
       seededRandom(seed + 6) * Math.PI,
       seededRandom(seed + 7) * Math.PI
     );
-  }, [asteroid.id, asteroid.orbit, asteroid.orbitProgress]);
+  }, [asteroid.id, asteroid.orbit, asteroid.orbitProgress, asteroid.hasRealOrbitalData, asteroid.realPosition]);
 
   // Only rotate the asteroid slowly, no orbital movement
   useFrame(() => {
@@ -152,7 +126,7 @@ function OrbitTrail({ orbit, asteroid, isHovered = false, isSelected = false }) 
     const seed = asteroid.id ? asteroid.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 1000;
     const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1;
 
-    const a = 8 + seededRandom(seed + 1) * 4; // Same distance as asteroid
+        const a = (asteroid.orbit?.semiMajorAxis || 1.5) * 100; // Use real semi-major axis, convert to scene units
     const e = orbit.eccentricity || 0.1;
     const i = (orbit.inclination || 0) * Math.PI / 180;
 
@@ -204,7 +178,7 @@ function InteractiveOrbit({ asteroid, isSelected, onOrbitClick }) {
     const seed = asteroid.id ? asteroid.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0) : 1000;
     const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1;
 
-    const a = 8 + seededRandom(seed + 1) * 4; // Same distance as asteroid
+        const a = (asteroid.orbit?.semiMajorAxis || 1.5) * 100; // Use real semi-major axis, convert to scene units
     const e = asteroid.orbit?.eccentricity || 0.1;
     const i = (asteroid.orbit?.inclination || 0) * Math.PI / 180;
 
@@ -246,15 +220,10 @@ function InteractiveOrbit({ asteroid, isSelected, onOrbitClick }) {
 }
 
 export default function AsteroidRenderer({ asteroids, selectedAsteroid, onAsteroidSelect, isFocusedMode = false }) {
-  console.log('AsteroidRenderer received asteroids:', asteroids?.length || 0);
-
   // Early return after hooks
   if (!asteroids || asteroids.length === 0) {
-    console.log('No asteroids to render');
     return null;
   }
-
-  console.log('Rendering', asteroids.length, 'asteroids');
 
   // Filter asteroids based on mode
   const asteroidsToShow = isFocusedMode && selectedAsteroid
@@ -270,14 +239,7 @@ export default function AsteroidRenderer({ asteroids, selectedAsteroid, onAstero
             isSelected={selectedAsteroid && selectedAsteroid.id === asteroid.id}
             onSelect={onAsteroidSelect}
           />
-          {/* Only show orbits when not in focused mode */}
-          {!isFocusedMode && asteroid.orbit && (
-            <InteractiveOrbit
-              asteroid={asteroid}
-              isSelected={selectedAsteroid && selectedAsteroid.id === asteroid.id}
-              onOrbitClick={() => onAsteroidSelect && onAsteroidSelect(asteroid)}
-            />
-          )}
+              {/* Orbits removed as requested */}
         </group>
       ))}
     </group>

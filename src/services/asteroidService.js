@@ -1,58 +1,97 @@
 // NASA Near Earth Object Web Service (NeoWs) API
 const NASA_API_KEY = process.env.REACT_APP_NASA_API_KEY || 'DEMO_KEY';
 const NEO_API_BASE = 'https://api.nasa.gov/neo/rest/v1';
+const NEO_FETCH_MODE = (process.env.REACT_APP_NEO_FETCH_MODE || 'browse').toLowerCase(); // 'browse' | 'feed'
+const NEO_PAGE_SIZE = parseInt(process.env.REACT_APP_NEO_PAGE_SIZE || '200', 10); // browse size per page
+const NEO_MAX_PAGES = parseInt(process.env.REACT_APP_NEO_MAX_PAGES || '3', 10); // how many pages to fetch
+const NEO_MAX_COUNT = parseInt(process.env.REACT_APP_NEO_MAX_COUNT || '600', 10); // safety cap
 
 class AsteroidService {
   async getAsteroids() {
     try {
-      // Get Near Earth Objects for today
-      const today = new Date().toISOString().split('T')[0];
-      const response = await fetch(
-        `${NEO_API_BASE}/feed?start_date=${today}&end_date=${today}&api_key=${NASA_API_KEY}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      if (NEO_FETCH_MODE === 'browse') {
+        return await this.getAsteroidsByBrowse();
+      } else {
+        return await this.getAsteroidsByFeed();
       }
-      
-      const data = await response.json();
-      const asteroids = [];
-      
-      // Process NEO data
-      Object.values(data.near_earth_objects).forEach(dayAsteroids => {
-        dayAsteroids.forEach(neo => {
-          asteroids.push({
-            id: neo.id,
-            name: neo.name,
-            type: 'Near Earth Object',
-            status: neo.is_potentially_hazardous_asteroid ? 'Hazardous' : 'Safe',
-            diameter: neo.estimated_diameter?.kilometers?.estimated_diameter_average || 0.5,
-            velocity: parseFloat(neo.close_approach_data[0]?.relative_velocity?.kilometers_per_hour) || 0,
-            distance: parseFloat(neo.close_approach_data[0]?.miss_distance?.kilometers) || 0,
-            orbit: {
-              semiMajorAxis: Math.min((parseFloat(neo.close_approach_data[0]?.miss_distance?.astronomical) || 1), 3), // Closer to Earth
-              eccentricity: Math.random() * 0.3, // Approximate
-              inclination: Math.random() * 30, // Approximate
-              period: Math.random() * 1000 + 365 // Approximate orbital period in days
-            },
-            orbitProgress: Math.random(), // Random position in orbit (0-1)
-            magnitude: neo.absolute_magnitude_h,
-            discoveryDate: neo.close_approach_data[0]?.close_approach_date || today,
-            isPotentiallyHazardous: neo.is_potentially_hazardous_asteroid
-          });
-        });
-      });
-      
-      // If no asteroids found, return mock data
-      if (asteroids.length === 0) {
-        return this.getMockAsteroids();
-      }
-      
-      return asteroids.slice(0, 20); // Limit to 20 asteroids
     } catch (error) {
       console.error('Failed to fetch asteroid data:', error);
       return this.getMockAsteroids();
     }
+  }
+
+  async getAsteroidsByFeed() {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await fetch(
+      `${NEO_API_BASE}/feed?start_date=${today}&end_date=${today}&api_key=${NASA_API_KEY}`
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    const asteroids = [];
+    Object.values(data.near_earth_objects).forEach(dayAsteroids => {
+      dayAsteroids.forEach(neo => {
+        const ca = neo.close_approach_data && neo.close_approach_data[0];
+        asteroids.push(this.mapNeoToAsteroid(neo, ca));
+      });
+    });
+    return asteroids.slice(0, Math.min(NEO_MAX_COUNT, asteroids.length));
+  }
+
+  async getAsteroidsByBrowse() {
+    const results = [];
+    for (let page = 0; page < NEO_MAX_PAGES; page++) {
+      const response = await fetch(
+        `${NEO_API_BASE}/neo/browse?page=${page}&size=${NEO_PAGE_SIZE}&api_key=${NASA_API_KEY}`
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      const neos = data.near_earth_objects || [];
+      for (const neo of neos) {
+        const ca = Array.isArray(neo.close_approach_data) && neo.close_approach_data.length > 0
+          ? neo.close_approach_data[0]
+          : null;
+        results.push(this.mapNeoToAsteroid(neo, ca));
+        if (results.length >= NEO_MAX_COUNT) {
+          return results;
+        }
+      }
+      // If there are no more pages, break
+      if (!data.page || page >= (data.page.total_pages - 1)) {
+        break;
+      }
+    }
+    return results.length ? results : this.getMockAsteroids();
+  }
+
+  mapNeoToAsteroid(neo, ca) {
+    const today = new Date().toISOString().split('T')[0];
+    const diameterKm = neo.estimated_diameter?.kilometers?.estimated_diameter_average || 0.5;
+    const relVelocity = ca ? parseFloat(ca.relative_velocity?.kilometers_per_hour) : 0;
+    const missDistanceKm = ca ? parseFloat(ca.miss_distance?.kilometers) : 0;
+    const missDistanceAu = ca ? parseFloat(ca.miss_distance?.astronomical) : 1;
+    return {
+      id: neo.id,
+      name: neo.name,
+      type: 'Near Earth Object',
+      status: neo.is_potentially_hazardous_asteroid ? 'Hazardous' : 'Safe',
+      diameter: diameterKm,
+      velocity: relVelocity,
+      distance: missDistanceKm,
+      orbit: {
+        semiMajorAxis: Math.min(missDistanceAu || 1, 3),
+        eccentricity: Math.random() * 0.3,
+        inclination: Math.random() * 30,
+        period: Math.random() * 1000 + 365
+      },
+      orbitProgress: Math.random(),
+      magnitude: neo.absolute_magnitude_h,
+      discoveryDate: (ca && ca.close_approach_date) || today,
+      isPotentiallyHazardous: neo.is_potentially_hazardous_asteroid
+    };
   }
 
   getMockAsteroids() {

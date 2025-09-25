@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -172,14 +172,25 @@ function OrbitTrail({ orbit, asteroid, isHovered = false, isSelected = false }) 
     return new THREE.BufferGeometry().setFromPoints(orbitData.points);
   }, [orbitData.points]);
 
+  const lineRef = useRef();
+
+  useEffect(() => {
+    if (lineRef.current) {
+      // compute distances for dashed material
+      lineRef.current.computeLineDistances();
+    }
+  }, [geometry]);
+
   return (
     <group>
-      <line geometry={geometry}>
-        <lineBasicMaterial
-          color="#ffffff" // White color for all orbits
+      <line ref={lineRef} geometry={geometry}>
+        <lineDashedMaterial
+          color={"#00e5ff"}
           transparent
-          opacity={isSelected ? 0.6 : 0.3} // Only show selection state, no hover
-          linewidth={2} // Fixed width, no hover effect
+          opacity={isSelected ? 0.85 : 0.45}
+          dashSize={0.25}
+          gapSize={0.15}
+          linewidth={1}
         />
       </line>
     </group>

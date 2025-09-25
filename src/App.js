@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import EarthVisualization from './components/EarthVisualization';
 import Sidebar from './components/Sidebar';
 import TimeControls from './components/TimeControls';
@@ -19,6 +19,43 @@ const MainContent = styled.div`
   width: 100%;
   height: 100%;
   position: relative;
+  overflow-x: hidden;
+`;
+
+const GlobalStyle = createGlobalStyle`
+  :root {
+    --bg: #000000;
+    --panel: rgba(0, 0, 0, 0.85);
+    --border: rgba(255, 255, 255, 0.1);
+    --text: #ffffff;
+    --text-dim: rgba(255, 255, 255, 0.7);
+    --accent: #00e5ff; /* NASA cyan */
+    --accent-2: #4ecdc4; /* complementary */
+    --danger: #eb4d4b;
+    --success: #27ae60;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body, #root { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    letter-spacing: 0.2px;
+  }
+
+  html, body { overflow-x: hidden; }
+
+  ::selection { background: rgba(0, 229, 255, 0.3); }
+
+  /* Sleek scrollbars */
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
 `;
 
 const BackToEarthButton = styled.button`
@@ -100,6 +137,7 @@ function App() {
     <DataProvider>
       <TimeProvider>
         <AppContainer>
+          <GlobalStyle />
           <MainContent>
             <EarthVisualization 
               selectedSatellite={selectedSatellite}

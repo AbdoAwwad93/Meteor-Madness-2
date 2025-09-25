@@ -329,42 +329,133 @@ export default function EarthVisualization({ selectedSatellite, activeDataLayer,
   console.log('EarthVisualization satellites:', satellites?.length || 0, satellites);
 
   useEffect(() => {
-    // Try to preload textures in background
     const loader = new THREE.TextureLoader();
-    // Only load JPG files for now (TIF not supported in browsers)
-    const textureUrls = [
-      `${process.env.PUBLIC_URL}/textures/8k_earth_daymap.jpg`,
-      `${process.env.PUBLIC_URL}/textures/8k_earth_nightmap.jpg`,
-      `${process.env.PUBLIC_URL}/textures/8k_earth_clouds.jpg`,
-      `${process.env.PUBLIC_URL}/textures/8k_stars_milky_way.jpg`
-    ];
+    // Allow loading from CDNs with CORS
+    if (loader.setCrossOrigin) loader.setCrossOrigin('anonymous');
+    const basePath = (process.env.PUBLIC_URL || '') + '/textures';
 
-    console.log('Starting texture loading...');
-    const textures = {};
-    let loadedCount = 0;
-    
-    textureUrls.forEach((url, index) => {
-      console.log(`Attempting to load: ${url}`);
-      loader.load(
-        url, 
-        (texture) => {
-          const keys = ['dayMap', 'nightMap', 'cloudsMap', 'milkyWay'];
-          textures[keys[index]] = texture;
-          loadedCount++;
-          console.log(`✅ Successfully loaded texture: ${url} (${loadedCount}/${textureUrls.length})`);
-          
-          // Update state with loaded textures
-          setLoadedTextures({...textures});
-        },
-        (progress) => {
-          console.log(`Loading progress for ${url}:`, progress);
-        },
-        (error) => {
-          console.error(`❌ Failed to load texture: ${url}`, error);
-          loadedCount++;
-        }
-      );
-    });
+    // Define candidate URLs for each texture (local first, then CDN fallbacks)
+    const candidates = {
+      dayMap: [
+        `${basePath}/8k_earth_daymap.jpg`,
+        'https://unpkg.com/three-globe@2.30.0/example/img/earth-blue-marble.jpg',
+        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_daymap.jpg',
+        'https://unpkg.com/@pmndrs/assets@1.0.0/textures/planets/earth/day.jpg'
+      ],
+      nightMap: [
+        `${basePath}/8k_earth_nightmap.jpg`,
+        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_nightmap.jpg'
+      ],
+      cloudsMap: [
+        `${basePath}/8k_earth_clouds.jpg`,
+        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_clouds.jpg'
+      ],
+      milkyWay: [
+        `${basePath}/8k_stars_milky_way.jpg`
+      ]
+    };
+
+    function setCommonTextureProps(texture) {
+      if (!texture) return;
+      // sRGB for color-correct rendering
+      if ('colorSpace' in texture) {
+        texture.colorSpace = THREE.SRGBColorSpace;
+      } else {
+        // older three fallback
+        texture.encoding = THREE.sRGBEncoding;
+      }
+      texture.anisotropy = 8;
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.ClampToEdgeWrapping;
+    }
+
+    function loadFirstAvailable(urlList) {
+      return new Promise((resolve) => {
+        const tryNext = (idx) => {
+          if (idx >= urlList.length) {
+            resolve(null);
+            return;
+          }
+          const url = urlList[idx];
+          console.log('Attempting to load texture:', url);
+          loader.load(
+            url,
+            (tex) => {
+              setCommonTextureProps(tex);
+              console.log('Loaded texture:', url);
+              resolve(tex);
+            },
+            undefined,
+            () => {
+              console.warn('Failed to load texture, trying next:', url);
+              tryNext(idx + 1);
+            }
+          );
+        };
+        tryNext(0);
+      });
+    }
+
+    function createProceduralDayTexture() {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      // Ocean (brighter, more saturated)
+      const oceanGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      oceanGradient.addColorStop(0, '#1565C0');
+      oceanGradient.addColorStop(1, '#0D47A1');
+      ctx.fillStyle = oceanGradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Simple continents blotches with higher contrast
+      ctx.fillStyle = '#43A047';
+      for (let i = 0; i < 200; i++) {
+        const x = Math.random() * canvas.width;
+        const y = Math.random() * canvas.height;
+        const r = Math.random() * 55 + 25;
+        ctx.beginPath();
+        ctx.ellipse(x, y, r * 1.9, r, 0, 0, Math.PI * 2);
+        ctx.globalAlpha = 0.95;
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // Add ice caps
+      const gradTop = ctx.createLinearGradient(0, 0, 0, 80);
+      gradTop.addColorStop(0, 'rgba(240,240,255,0.95)');
+      gradTop.addColorStop(1, 'rgba(240,240,255,0)');
+      ctx.fillStyle = gradTop;
+      ctx.fillRect(0, 0, canvas.width, 100);
+      const gradBottom = ctx.createLinearGradient(0, canvas.height - 80, 0, canvas.height);
+      gradBottom.addColorStop(0, 'rgba(240,240,255,0)');
+      gradBottom.addColorStop(1, 'rgba(240,240,255,0.95)');
+      ctx.fillStyle = gradBottom;
+      ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+      const texture = new THREE.CanvasTexture(canvas);
+      setCommonTextureProps(texture);
+      return texture;
+    }
+
+    // Set an immediate high-contrast procedural texture so Earth never appears flat
+    const immediateProcedural = createProceduralDayTexture();
+    setLoadedTextures({ dayMap: immediateProcedural });
+
+    (async () => {
+      console.log('Starting texture loading with fallbacks...');
+      const [dayMap, nightMap, cloudsMap, milkyWay] = await Promise.all([
+        loadFirstAvailable(candidates.dayMap),
+        loadFirstAvailable(candidates.nightMap),
+        loadFirstAvailable(candidates.cloudsMap),
+        loadFirstAvailable(candidates.milkyWay)
+      ]);
+
+      const finalDayMap = dayMap || immediateProcedural || createProceduralDayTexture();
+      const textures = { dayMap: finalDayMap };
+      if (nightMap) textures.nightMap = nightMap;
+      if (cloudsMap) textures.cloudsMap = cloudsMap;
+      if (milkyWay) textures.milkyWay = milkyWay;
+
+      setLoadedTextures(textures);
+    })();
   }, []);
 
   return (

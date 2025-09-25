@@ -30,7 +30,7 @@ const PanelContainer = styled.div`
   max-height: 80vh;
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   color: white;
   overflow: hidden;
@@ -44,7 +44,7 @@ const Header = styled.div`
   
   h2 {
     margin: 0 0 5px 0;
-    color: #4ecdc4;
+    color: var(--accent);
     font-size: 1.2rem;
   }
   
@@ -60,7 +60,7 @@ const Header = styled.div`
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: bold;
-    background: ${props => props.status === 'Safe' ? '#27ae60' : '#e74c3c'};
+    background: ${props => props.status === 'Safe' ? 'var(--success)' : 'var(--danger)'};
   }
 `;
 
@@ -93,13 +93,13 @@ const Tab = styled.button`
   flex: 1;
   padding: 12px;
   border: none;
-  background: ${props => props.$active ? 'rgba(78, 205, 196, 0.2)' : 'transparent'};
-  color: ${props => props.$active ? '#4ecdc4' : 'rgba(255, 255, 255, 0.7)'};
+  background: ${props => props.$active ? 'rgba(0, 229, 255, 0.12)' : 'transparent'};
+  color: ${props => props.$active ? 'var(--accent)' : 'rgba(255, 255, 255, 0.7)'};
   cursor: pointer;
   font-size: 0.9rem;
   
   &:hover {
-    background: rgba(78, 205, 196, 0.1);
+    background: rgba(0, 229, 255, 0.08);
   }
 `;
 

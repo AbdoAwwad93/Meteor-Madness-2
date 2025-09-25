@@ -7,9 +7,9 @@ const ControlsContainer = styled.div`
   bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   padding: 15px 25px;
   display: flex;
@@ -23,7 +23,7 @@ const PlayButton = styled.button`
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: ${props => props.$isPlaying ? '#eb4d4b' : '#4ecdc4'};
+  background: ${props => props.$isPlaying ? 'var(--danger)' : 'var(--accent)'};
   border: none;
   color: white;
   cursor: pointer;
@@ -35,7 +35,7 @@ const PlayButton = styled.button`
   
   &:hover {
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 229, 255, 0.35);
   }
 `;
 
@@ -44,7 +44,7 @@ const StepButton = styled.button`
   height: 32px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   color: white;
   cursor: pointer;
   display: flex;
@@ -54,7 +54,8 @@ const StepButton = styled.button`
   transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 229, 255, 0.1);
+    border-color: var(--accent);
   }
 `;
 
@@ -71,7 +72,7 @@ const TimeSlider = styled.input`
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #4ecdc4;
+    background: var(--accent);
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   }
@@ -80,7 +81,7 @@ const TimeSlider = styled.input`
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #4ecdc4;
+    background: var(--accent);
     cursor: pointer;
     border: none;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
@@ -97,7 +98,7 @@ const TimeDisplay = styled.div`
 
 const SpeedControl = styled.select`
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
   color: white;
   padding: 6px 10px;
@@ -112,7 +113,7 @@ const SpeedControl = styled.select`
 
 const DatePicker = styled.input`
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 6px;
   color: white;
   padding: 6px 10px;

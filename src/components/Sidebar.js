@@ -1,218 +1,272 @@
-import React, { useMemo, useState } from 'react';
-import styled from 'styled-components';
-import { useData } from '../context/DataContext';
+"use client"
+
+import { useMemo, useState } from "react"
+import styled from "styled-components"
+import { useData } from "../context/DataContext"
 
 const SidebarContainer = styled.div`
   position: fixed;
-  top: 0;
+  top: 60px;
   left: 0;
   width: 320px;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(10px);
-  border-right: ${props => props.$collapsed ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'};
+  height: calc(100vh - 60px);
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(15px);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
   color: white;
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 100;
-  transition: transform 0.3s ease;
-  transform: ${props => props.$collapsed ? 'translateX(-100%)' : 'translateX(0)'};
-`;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  transform: translateX(${props => props.$isOpen ? '0' : '-100%'});
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+`
 
-const CollapseButton = styled.button`
-  position: fixed;
-  top: 20px;
-  left: ${props => props.$collapsed ? '0px' : '320px'};
-  width: 40px;
-  height: 40px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0 8px 8px 0;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  z-index: 1002;
-  
-  &:hover {
-    background: rgba(0, 0, 0, 0.9);
-  }
-`;
 
 const Header = styled.div`
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   
   h1 {
-    font-size: 1.1rem;
+    font-size: 18px;
     font-weight: 700;
-    margin-bottom: 4px;
-    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+    color: white;
   }
   
   p {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.4;
   }
-`;
+`
 
 const Section = styled.div`
   padding: 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   
   h3 {
-    font-size: 0.9rem;
+    font-size: 12px;
     font-weight: 600;
-    margin-bottom: 15px;
-    color: var(--accent);
+    margin-bottom: 16px;
+    color: #0066cc;
     text-transform: uppercase;
     letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
-`;
+`
 
 const SearchBar = styled.input`
   width: 100%;
   padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 0.85rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.3);
+  color: white;
+  font-size: 14px;
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
+  font-family: inherit;
 
-  &::placeholder { color: rgba(255, 255, 255, 0.45); }
+  &::placeholder { 
+    color: rgba(255, 255, 255, 0.5); 
+  }
 
   &:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
+    background: rgba(0, 0, 0, 0.5);
   }
-`;
+`
 
-const DataLayerButton = styled.button`
-  width: 100%;
-  padding: 12px 15px;
-  margin-bottom: 8px;
-  background: ${props => props.$active ? 'rgba(78, 205, 196, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
-  border: 1px solid ${props => props.$active ? '#4ecdc4' : 'rgba(255, 255, 255, 0.1)'};
-  border-radius: 6px;
-  color: white;
+const RefreshButton = styled.button`
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  text-align: left;
-  font-size: 0.85rem;
+  font-size: 12px;
+  font-weight: 500;
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
   
   &:hover {
-    background: rgba(78, 205, 196, 0.1);
-    border-color: #4ecdc4;
+    background: rgba(0, 102, 204, 0.2);
+    border-color: #0066cc;
+    color: #0066cc;
   }
-  
-  .layer-name {
-    font-weight: 500;
-    display: block;
-  }
-  
-  .layer-desc {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin-top: 4px;
-  }
-`;
+`
 
 const SatelliteItem = styled.div`
-  padding: 12px 15px;
+  padding: 12px;
   margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 102, 204, 0.1);
+    border-color: #0066cc;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
   
   .sat-name {
-    font-weight: 500;
-    font-size: 0.85rem;
-    margin-bottom: 4px;
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 6px;
+    color: white;
   }
   
   .sat-type {
-    font-size: 0.75rem;
-    color: var(--accent);
-    margin-bottom: 2px;
+    font-size: 12px;
+    color: #0066cc;
+    margin-bottom: 4px;
+    font-weight: 500;
   }
   
   .sat-status {
-    font-size: 0.7rem;
+    font-size: 11px;
     color: rgba(255, 255, 255, 0.6);
+    display: flex;
+    align-items: center;
   }
-`;
+`
 
 const StatusIndicator = styled.span`
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: ${props => props.$status === 'Active' ? 'var(--accent)' : '#eb4d4b'};
-  margin-right: 6px;
-`;
+  background: ${(props) => (props.$status === "Active" ? "#00aa44" : "#ff4757")};
+  margin-right: 8px;
+  box-shadow: 0 0 6px ${(props) => (props.$status === "Active" ? "#00aa44" : "#ff4757")};
+`
+
+const LoadingState = styled.div`
+  text-align: center;
+  padding: 32px 20px;
+  color: rgba(255, 255, 255, 0.6);
+  
+  .spinner {
+    width: 24px;
+    height: 24px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-top: 2px solid #0066cc;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 12px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`
+
+const ErrorState = styled.div`
+  text-align: center;
+  padding: 32px 20px;
+  
+  .error-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    color: #ff4757;
+  }
+  
+  .error-title {
+    font-weight: 600;
+    color: #ff4757;
+    margin-bottom: 8px;
+  }
+  
+  .error-message {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+`
+
+const RetryButton = styled.button`
+  background: transparent;
+  border: 1px solid rgba(255, 71, 87, 0.3);
+  color: #ff4757;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: inherit;
+
+  &:hover {
+    background: rgba(255, 71, 87, 0.1);
+    border-color: #ff4757;
+  }
+`
 
 const dataLayers = [
   {
-    id: 'temperature',
-    name: 'Surface Temperature',
-    description: 'Global temperature anomalies'
+    id: "temperature",
+    name: "Surface Temperature",
+    description: "Global temperature anomalies",
   },
   {
-    id: 'co2',
-    name: 'Atmospheric CO₂',
-    description: 'Carbon dioxide concentrations'
+    id: "co2",
+    name: "Atmospheric CO₂",
+    description: "Carbon dioxide concentrations",
   },
   {
-    id: 'seaLevel',
-    name: 'Sea Level',
-    description: 'Global mean sea level changes'
+    id: "seaLevel",
+    name: "Sea Level",
+    description: "Global mean sea level changes",
   },
   {
-    id: 'iceSheet',
-    name: 'Ice Sheet Mass',
-    description: 'Greenland and Antarctic ice mass'
+    id: "iceSheet",
+    name: "Ice Sheet Mass",
+    description: "Greenland and Antarctic ice mass",
   },
   {
-    id: 'methane',
-    name: 'Methane Levels',
-    description: 'Atmospheric methane concentrations'
-  }
-];
+    id: "methane",
+    name: "Methane Levels",
+    description: "Atmospheric methane concentrations",
+  },
+]
 
-export default function Sidebar({ onSatelliteSelect }) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [query, setQuery] = useState('');
-  const { satellites, loading, error } = useData();
+export default function Sidebar({ onSatelliteSelect, isOpen }) {
+  const [query, setQuery] = useState("")
+  const { satellites, loading, error } = useData()
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return satellites;
-    return satellites.filter(a =>
-      (a.name || '').toLowerCase().includes(q) ||
-      (a.type || '').toLowerCase().includes(q)
-    );
-  }, [satellites, query]);
+    const q = query.trim().toLowerCase()
+    if (!q) return satellites
+    return satellites.filter(
+      (a) => (a.name || "").toLowerCase().includes(q) || (a.type || "").toLowerCase().includes(q),
+    )
+  }, [satellites, query])
 
   return (
-    <>
-      <CollapseButton $collapsed={collapsed} onClick={() => setCollapsed(!collapsed)}>
-        {collapsed ? '→' : '←'}
-      </CollapseButton>
-      <SidebarContainer $collapsed={collapsed}>
+    <SidebarContainer $isOpen={isOpen}>
+        <Header>
+          <h1>Mission Control</h1>
+          <p>Near-Earth Object Tracking System</p>
+        </Header>
+
       <Section>
         <SearchBar
-          placeholder="Search by name or type"
+            placeholder="Search asteroids by name or type..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search asteroids"
@@ -220,53 +274,29 @@ export default function Sidebar({ onSatelliteSelect }) {
       </Section>
 
             <Section>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h3>Asteroids ({filtered.length})</h3>
-                <button 
-                  onClick={() => window.location.reload()} 
-                  style={{
-                    background: 'rgba(0, 229, 255, 0.2)',
-                    border: '1px solid rgba(0, 229, 255, 0.5)',
-                    color: '#00e5ff',
-                    padding: '5px 10px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  🔄 Refresh
-                </button>
-              </div>
+          <h3>
+            <span>Tracked Objects ({filtered.length})</span>
+            <RefreshButton onClick={() => window.location.reload()}>
+              <span>🔄</span>
+              Refresh
+            </RefreshButton>
+          </h3>
+
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#666' }}>
-                  Loading asteroids...
-                </div>
+            <LoadingState>
+              <div className="spinner"></div>
+              <div>Loading asteroid data...</div>
+            </LoadingState>
               ) : error ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#ff6b6b' }}>
-                  <div style={{ marginBottom: '10px' }}>❌ Error Loading Data</div>
-                  <div style={{ fontSize: '12px', color: '#ccc' }}>{error}</div>
-                  <button 
-                    onClick={() => window.location.reload()} 
-                    style={{
-                      background: 'rgba(255, 107, 107, 0.2)',
-                      border: '1px solid rgba(255, 107, 107, 0.5)',
-                      color: '#ff6b6b',
-                      padding: '8px 16px',
-                      borderRadius: '4px',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      marginTop: '10px'
-                    }}
-                  >
-                    🔄 Retry
-                  </button>
-                </div>
-              ) : (
-          filtered.map(asteroid => (
-            <SatelliteItem
-              key={asteroid.id}
-              onClick={() => onSatelliteSelect(asteroid)}
-            >
+            <ErrorState>
+              <div className="error-icon">⚠️</div>
+              <div className="error-title">Connection Error</div>
+              <div className="error-message">{error}</div>
+              <RetryButton onClick={() => window.location.reload()}>Retry Connection</RetryButton>
+            </ErrorState>
+          ) : (
+            filtered.map((asteroid) => (
+              <SatelliteItem key={asteroid.id} onClick={() => onSatelliteSelect(asteroid)}>
               <div className="sat-name">{asteroid.name}</div>
               <div className="sat-type">{asteroid.type}</div>
               <div className="sat-status">
@@ -277,7 +307,6 @@ export default function Sidebar({ onSatelliteSelect }) {
           ))
         )}
       </Section>
-      </SidebarContainer>
-    </>
-  );
+    </SidebarContainer>
+  )
 }

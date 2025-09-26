@@ -1,198 +1,194 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
-import { useData } from '../context/DataContext';
-import { useTime } from '../context/TimeContext';
-import AsteroidRenderer, { TestAsteroids } from './AsteroidRenderer';
+"use client"
+
+import { useRef, useEffect, useState } from "react"
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { OrbitControls } from "@react-three/drei"
+import * as THREE from "three"
+import { useData } from "../context/DataContext"
+import { useTime } from "../context/TimeContext"
+import AsteroidRenderer from "./AsteroidRenderer"
 
 function Earth({ activeDataLayer, textures = {} }) {
-  const meshRef = useRef();
-  const { currentTime } = useTime();
+  const meshRef = useRef()
+  const { currentTime } = useTime()
 
   useFrame((state) => {
     if (meshRef.current) {
       // Rotate Earth based on time
-      meshRef.current.rotation.y = (currentTime.getTime() / 86400000) * Math.PI * 2;
+      meshRef.current.rotation.y = (currentTime.getTime() / 86400000) * Math.PI * 2
       // Debug: log that Earth is rendering
       if (state.clock.elapsedTime < 1) {
       }
     }
-  });
+  })
 
   return (
     <group>
       {/* Single Earth sphere */}
       <mesh ref={meshRef} position={[0, 0, 0]}>
         <sphereGeometry args={[5, 64, 32]} />
-        <meshPhongMaterial
-          map={textures.dayMap}
-          color={textures.dayMap ? undefined : '#4a90e2'}
-          shininess={100}
-        />
+        <meshPhongMaterial map={textures.dayMap} color={textures.dayMap ? undefined : "#4a90e2"} shininess={100} />
       </mesh>
     </group>
-  );
+  )
 }
 
 function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
-  const { camera, gl } = useThree();
-  const controlsRef = useRef();
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  
+  const { camera, gl } = useThree()
+  const controlsRef = useRef()
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
   useEffect(() => {
-    camera.position.set(0, 0, 20);
-    camera.lookAt(0, 0, 0);
-  }, [camera]);
+    camera.position.set(0, 0, 20)
+    camera.lookAt(0, 0, 0)
+  }, [camera])
 
   // Handle asteroid selection and camera movement
   useEffect(() => {
     if (selectedAsteroid && asteroids && controlsRef.current) {
-      const asteroid = asteroids.find(a => a.id === selectedAsteroid.id);
+      const asteroid = asteroids.find((a) => a.id === selectedAsteroid.id)
       if (asteroid) {
-        setIsTransitioning(true);
-        
+        setIsTransitioning(true)
+
         // Use real asteroid position if available
-        let asteroidPosition = new THREE.Vector3();
-        
+        const asteroidPosition = new THREE.Vector3()
+
         if (asteroid.realPosition) {
           // Use the calculated real position
-          asteroidPosition.copy(asteroid.realPosition);
+          asteroidPosition.copy(asteroid.realPosition)
         } else {
           // Fallback to calculated position using orbital mechanics
-          
+
           if (asteroid.orbit && asteroid.orbit.semiMajorAxis) {
             // Use orbital mechanics calculation
-            const orbit = asteroid.orbit;
-            const currentTime = new Date();
-            const epochTime = new Date((orbit.epoch - 2440587.5) * 86400000);
-            const timeSinceEpoch = (currentTime.getTime() - epochTime.getTime()) / 86400000;
-            
-            const meanMotion = Math.sqrt(1.32712440018e11 / Math.pow(orbit.semiMajorAxis * 149597870.7, 3)) * 86400;
-            const meanAnomaly = (orbit.meanAnomaly * Math.PI / 180 + meanMotion * timeSinceEpoch) % (2 * Math.PI);
-            
+            const orbit = asteroid.orbit
+            const currentTime = new Date()
+            const epochTime = new Date((orbit.epoch - 2440587.5) * 86400000)
+            const timeSinceEpoch = (currentTime.getTime() - epochTime.getTime()) / 86400000
+
+            const meanMotion = Math.sqrt(1.32712440018e11 / Math.pow(orbit.semiMajorAxis * 149597870.7, 3)) * 86400
+            const meanAnomaly = ((orbit.meanAnomaly * Math.PI) / 180 + meanMotion * timeSinceEpoch) % (2 * Math.PI)
+
             // Solve Kepler's equation
-            let eccentricAnomaly = meanAnomaly;
+            let eccentricAnomaly = meanAnomaly
             for (let i = 0; i < 10; i++) {
-              const f = eccentricAnomaly - orbit.eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly;
-              const fPrime = 1 - orbit.eccentricity * Math.cos(eccentricAnomaly);
-              eccentricAnomaly = eccentricAnomaly - f / fPrime;
+              const f = eccentricAnomaly - orbit.eccentricity * Math.sin(eccentricAnomaly) - meanAnomaly
+              const fPrime = 1 - orbit.eccentricity * Math.cos(eccentricAnomaly)
+              eccentricAnomaly = eccentricAnomaly - f / fPrime
             }
-            
+
             // Calculate true anomaly
-            const cosE = Math.cos(eccentricAnomaly);
-            const sinE = Math.sin(eccentricAnomaly);
-            const sqrtOneMinusESq = Math.sqrt(1 - orbit.eccentricity * orbit.eccentricity);
-            const cosNu = (cosE - orbit.eccentricity) / (1 - orbit.eccentricity * cosE);
-            const sinNu = (sqrtOneMinusESq * sinE) / (1 - orbit.eccentricity * cosE);
-            const trueAnomaly = Math.atan2(sinNu, cosNu);
-            
+            const cosE = Math.cos(eccentricAnomaly)
+            const sinE = Math.sin(eccentricAnomaly)
+            const sqrtOneMinusESq = Math.sqrt(1 - orbit.eccentricity * orbit.eccentricity)
+            const cosNu = (cosE - orbit.eccentricity) / (1 - orbit.eccentricity * cosE)
+            const sinNu = (sqrtOneMinusESq * sinE) / (1 - orbit.eccentricity * cosE)
+            const trueAnomaly = Math.atan2(sinNu, cosNu)
+
             // Calculate distance
-            const r = orbit.semiMajorAxis * (1 - orbit.eccentricity * orbit.eccentricity) / (1 + orbit.eccentricity * Math.cos(trueAnomaly));
-            
+            const r =
+              (orbit.semiMajorAxis * (1 - orbit.eccentricity * orbit.eccentricity)) /
+              (1 + orbit.eccentricity * Math.cos(trueAnomaly))
+
             // Convert to scene units (1 AU = 100 units)
-            const rScene = r * 100;
-            
+            const rScene = r * 100
+
             // Calculate position in orbital plane
-            const xOrb = rScene * Math.cos(trueAnomaly);
-            const yOrb = rScene * Math.sin(trueAnomaly);
-            const zOrb = 0;
-            
+            const xOrb = rScene * Math.cos(trueAnomaly)
+            const yOrb = rScene * Math.sin(trueAnomaly)
+            const zOrb = 0
+
             // Apply orbital inclination and orientation
-            const i = orbit.inclination * Math.PI / 180;
-            const Omega = orbit.longitudeOfAscendingNode * Math.PI / 180;
-            const omega = orbit.argumentOfPerihelion * Math.PI / 180;
-            
+            const i = (orbit.inclination * Math.PI) / 180
+            const Omega = (orbit.longitudeOfAscendingNode * Math.PI) / 180
+            const omega = (orbit.argumentOfPerihelion * Math.PI) / 180
+
             // Rotate to heliocentric coordinates
-            const x = xOrb * Math.cos(omega) - yOrb * Math.sin(omega);
-            const y = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.cos(i);
-            const z = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.sin(i);
-            
+            const x = xOrb * Math.cos(omega) - yOrb * Math.sin(omega)
+            const y = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.cos(i)
+            const z = (xOrb * Math.sin(omega) + yOrb * Math.cos(omega)) * Math.sin(i)
+
             // Final rotation by longitude of ascending node
-            const xFinal = x * Math.cos(Omega) - y * Math.sin(Omega);
-            const yFinal = x * Math.sin(Omega) + y * Math.cos(Omega);
-            const zFinal = z;
-            
-            asteroidPosition.set(xFinal, yFinal, zFinal);
+            const xFinal = x * Math.cos(Omega) - y * Math.sin(Omega)
+            const yFinal = x * Math.sin(Omega) + y * Math.cos(Omega)
+            const zFinal = z
+
+            asteroidPosition.set(xFinal, yFinal, zFinal)
           }
         }
-        
+
         // Calculate camera position - closer for focused view
-        const direction = asteroidPosition.clone().normalize();
-        const distance = isFocusedMode ? .5: 8; // Much closer to asteroid
-        const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance));
-        
+        const direction = asteroidPosition.clone().normalize()
+        const distance = isFocusedMode ? 0.5 : 8 // Much closer to asteroid
+        const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance))
+
         // Animate camera to new position
-        const startPosition = camera.position.clone();
-        const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0);
-        const duration = 3000; 
-        const startTime = Date.now();
-        
+        const startPosition = camera.position.clone()
+        const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
+        const duration = 3000
+        const startTime = Date.now()
+
         const animateCamera = () => {
-          const elapsed = Date.now() - startTime;
-          const progress = Math.min(elapsed / duration, 1);
-          
+          const elapsed = Date.now() - startTime
+          const progress = Math.min(elapsed / duration, 1)
+
           // Smooth easing function
-          const easeInOut = progress < 0.5 
-            ? 2 * progress * progress 
-            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-          
+          const easeInOut = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2
+
           // Interpolate camera position
-          camera.position.lerpVectors(startPosition, cameraPosition, easeInOut);
-          
+          camera.position.lerpVectors(startPosition, cameraPosition, easeInOut)
+
           // Interpolate target (look at asteroid) - only if controls exist
           if (controlsRef.current) {
-            controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOut);
-            controlsRef.current.update();
+            controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOut)
+            controlsRef.current.update()
           }
-          
+
           if (progress < 1) {
-            requestAnimationFrame(animateCamera);
+            requestAnimationFrame(animateCamera)
           } else {
-            setIsTransitioning(false);
+            setIsTransitioning(false)
           }
-        };
-        
-        animateCamera();
+        }
+
+        animateCamera()
       }
-        } else if (!selectedAsteroid && controlsRef.current) {
-          // Reset camera to Earth view when no asteroid is selected
-          setIsTransitioning(true);
-          const startPosition = camera.position.clone();
-          const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0);
-          const targetPosition = new THREE.Vector3(0, 0, 20);
-          const targetTarget = new THREE.Vector3(0, 0, 0);
-          const duration = 2000; // 2 seconds
-          const startTime = Date.now();
-      
+    } else if (!selectedAsteroid && controlsRef.current) {
+      // Reset camera to Earth view when no asteroid is selected
+      setIsTransitioning(true)
+      const startPosition = camera.position.clone()
+      const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
+      const targetPosition = new THREE.Vector3(0, 0, 20)
+      const targetTarget = new THREE.Vector3(0, 0, 0)
+      const duration = 2000 // 2 seconds
+      const startTime = Date.now()
+
       const animateCamera = () => {
-        const elapsed = Date.now() - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+
         // Smooth easing function
-        const easeInOut = progress < 0.5 
-          ? 2 * progress * progress 
-          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        
+        const easeInOut = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2
+
         // Interpolate camera position
-        camera.position.lerpVectors(startPosition, targetPosition, easeInOut);
-        
+        camera.position.lerpVectors(startPosition, targetPosition, easeInOut)
+
         // Interpolate target (look at Earth) - only if controls exist
         if (controlsRef.current) {
-          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOut);
-          controlsRef.current.update();
+          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOut)
+          controlsRef.current.update()
         }
-        
+
         if (progress < 1) {
-          requestAnimationFrame(animateCamera);
+          requestAnimationFrame(animateCamera)
         } else {
-          setIsTransitioning(false);
+          setIsTransitioning(false)
         }
-      };
-      
-      animateCamera();
+      }
+
+      animateCamera()
     }
-  }, [selectedAsteroid, asteroids, camera, isFocusedMode]);
+  }, [selectedAsteroid, asteroids, camera, isFocusedMode])
 
   return (
     <OrbitControls
@@ -203,298 +199,341 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
       zoomSpeed={0.4}
       panSpeed={0.5}
       rotateSpeed={0.5}
-      minDistance={.5}
-          maxDistance={100}
+      minDistance={0.5}
+      maxDistance={100}
       enabled={!isTransitioning} // Disable controls during transition
     />
-  );
+  )
 }
 
 function Lighting() {
   return (
     <>
       <ambientLight intensity={0.4} />
-      <directionalLight
-        position={[10, 5, 10]}
-        intensity={1}
-        castShadow
-      />
+      <directionalLight position={[10, 5, 10]} intensity={1} castShadow />
       <pointLight position={[0, 0, 0]} intensity={0.5} />
     </>
-  );
+  )
 }
 
 function MilkyWayBackground() {
-  const [milkyWayTexture, setMilkyWayTexture] = useState(null);
+  const [milkyWayTexture, setMilkyWayTexture] = useState(null)
 
   useEffect(() => {
+    // Load the actual Milky Way image
+    const loader = new THREE.TextureLoader()
     
-    // Always create procedural Milky Way texture (more reliable)
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
-    
-    // Create gradient background
-    const gradient = ctx.createRadialGradient(
-      canvas.width / 2, canvas.height / 2, 0,
-      canvas.width / 2, canvas.height / 2, canvas.width / 2
-    );
-    gradient.addColorStop(0, 'rgba(100, 50, 150, 0.8)');
-    gradient.addColorStop(0.3, 'rgba(50, 25, 100, 0.6)');
-    gradient.addColorStop(0.6, 'rgba(25, 12, 50, 0.4)');
-    gradient.addColorStop(1, 'rgba(10, 5, 20, 0.2)');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Add stars
-    ctx.fillStyle = 'white';
-    for (let i = 0; i < 2000; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const size = Math.random() * 2;
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
+    // Try to load the image, with fallback to procedural generation
+    const loadImage = async () => {
+      try {
+        const texture = await new Promise((resolve, reject) => {
+          loader.load(
+            '/textures/8k_stars_milky_way.jpg',
+            (texture) => {
+              console.log('✅ Milky Way image loaded successfully!')
+              // Configure texture properties
+              texture.wrapS = THREE.RepeatWrapping
+              texture.wrapT = THREE.ClampToEdgeWrapping
+              texture.colorSpace = THREE.SRGBColorSpace
+              resolve(texture)
+            },
+            (progress) => {
+              console.log('Loading Milky Way image...', (progress.loaded / progress.total * 100) + '%')
+            },
+            (error) => {
+              console.warn('❌ Failed to load Milky Way image, using procedural background:', error)
+              reject(error)
+            }
+          )
+        })
+        setMilkyWayTexture(texture)
+      } catch (error) {
+        // Fallback to procedural generation if image fails to load
+        console.log('🔄 Creating procedural background as fallback...')
+        createProceduralBackground()
+      }
     }
-    
-    // Add Milky Way band
-    ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(-Math.PI / 6);
-    
-    const milkyWayGradient = ctx.createLinearGradient(0, -canvas.height / 4, 0, canvas.height / 4);
-    milkyWayGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-    milkyWayGradient.addColorStop(0.3, 'rgba(200, 180, 255, 0.3)');
-    milkyWayGradient.addColorStop(0.5, 'rgba(255, 220, 180, 0.5)');
-    milkyWayGradient.addColorStop(0.7, 'rgba(200, 180, 255, 0.3)');
-    milkyWayGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    ctx.fillStyle = milkyWayGradient;
-    ctx.fillRect(-canvas.width, -canvas.height / 4, canvas.width * 2, canvas.height / 2);
-    ctx.restore();
-    
-    // Add nebula clouds
-    for (let i = 0; i < 20; i++) {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * canvas.height;
-      const radius = Math.random() * 100 + 50;
-      
-      const nebulaGradient = ctx.createRadialGradient(x, y, 0, x, y, radius);
-      const colors = [
-        'rgba(255, 100, 150, 0.2)',
-        'rgba(100, 150, 255, 0.2)',
-        'rgba(150, 255, 100, 0.2)',
-        'rgba(255, 200, 100, 0.2)'
-      ];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      
-      nebulaGradient.addColorStop(0, color);
-      nebulaGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      
-      ctx.fillStyle = nebulaGradient;
-      ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+
+    const createProceduralBackground = () => {
+      const canvas = document.createElement("canvas")
+      canvas.width = 2048
+      canvas.height = 1024
+      const ctx = canvas.getContext("2d")
+
+      // Create gradient background
+      const gradient = ctx.createRadialGradient(
+        canvas.width / 2,
+        canvas.height / 2,
+        0,
+        canvas.width / 2,
+        canvas.height / 2,
+        canvas.width / 2,
+      )
+      gradient.addColorStop(0, "rgba(100, 50, 150, 0.8)")
+      gradient.addColorStop(0.3, "rgba(50, 25, 100, 0.6)")
+      gradient.addColorStop(0.6, "rgba(25, 12, 50, 0.4)")
+      gradient.addColorStop(1, "rgba(10, 5, 20, 0.2)")
+
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Add stars
+      ctx.fillStyle = "white"
+      for (let i = 0; i < 2000; i++) {
+        const x = Math.random() * canvas.width
+        const y = Math.random() * canvas.height
+        const size = Math.random() * 2
+        ctx.beginPath()
+        ctx.arc(x, y, size, 0, Math.PI * 2)
+        ctx.fill()
+      }
+
+      // Add Milky Way band
+      ctx.save()
+      ctx.translate(canvas.width / 2, canvas.height / 2)
+      ctx.rotate(-Math.PI / 6)
+
+      const milkyWayGradient = ctx.createLinearGradient(0, -canvas.height / 4, 0, canvas.height / 4)
+      milkyWayGradient.addColorStop(0, "rgba(255, 255, 255, 0)")
+      milkyWayGradient.addColorStop(0.3, "rgba(200, 180, 255, 0.3)")
+      milkyWayGradient.addColorStop(0.5, "rgba(255, 220, 180, 0.5)")
+      milkyWayGradient.addColorStop(0.7, "rgba(200, 180, 255, 0.3)")
+      milkyWayGradient.addColorStop(1, "rgba(255, 255, 255, 0)")
+
+      ctx.fillStyle = milkyWayGradient
+      ctx.fillRect(-canvas.width, -canvas.height / 4, canvas.width * 2, canvas.height / 2)
+      ctx.restore()
+
+      // Add nebula clouds
+      for (let i = 0; i < 20; i++) {
+        const x = Math.random() * canvas.width
+        const y = Math.random() * canvas.height
+        const radius = Math.random() * 100 + 50
+
+        const nebulaGradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
+        const colors = [
+          "rgba(255, 100, 150, 0.2)",
+          "rgba(100, 150, 255, 0.2)",
+          "rgba(150, 255, 100, 0.2)",
+          "rgba(255, 200, 100, 0.2)",
+        ]
+        const color = colors[Math.floor(Math.random() * colors.length)]
+
+        nebulaGradient.addColorStop(0, color)
+        nebulaGradient.addColorStop(1, "rgba(0, 0, 0, 0)")
+
+        ctx.fillStyle = nebulaGradient
+        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+      }
+
+      const texture = new THREE.CanvasTexture(canvas)
+      console.log('✨ Procedural background created')
+      setMilkyWayTexture(texture)
     }
-    
-    const texture = new THREE.CanvasTexture(canvas);
-    setMilkyWayTexture(texture);
-  }, []);
+
+    loadImage()
+  }, [])
 
   if (!milkyWayTexture) {
-    return null;
+    return null
   }
 
   return (
     <mesh>
-      <sphereGeometry args={[500, 32, 16]} />
-      <meshBasicMaterial
-        map={milkyWayTexture}
-        side={THREE.BackSide}
-        transparent
-        opacity={0.8}
+      <sphereGeometry args={[1000, 32, 16]} />
+      <meshBasicMaterial 
+        map={milkyWayTexture} 
+        side={THREE.BackSide} 
+        transparent={false}
+        fog={false}
       />
     </mesh>
-  );
+  )
 }
 
 function SimpleStars() {
-  const starsRef = useRef();
-  
-  useEffect(() => {
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({ 
-      color: 0xffffff, 
-      size: 2,
-      sizeAttenuation: false 
-    });
-    
-    const starsVertices = [];
-    for (let i = 0; i < 1000; i++) {
-      const radius = 50 + Math.random() * 50;
-      const theta = Math.random() * Math.PI * 2;
-      const phi = Math.acos(2 * Math.random() - 1);
-      
-      const x = radius * Math.sin(phi) * Math.cos(theta);
-      const y = radius * Math.sin(phi) * Math.sin(theta);
-      const z = radius * Math.cos(phi);
-      
-      starsVertices.push(x, y, z);
-    }
-    
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
-    
-    if (starsRef.current) {
-      starsRef.current.geometry = starsGeometry;
-      starsRef.current.material = starsMaterial;
-    }
-  }, []);
+  const starsRef = useRef()
 
-  return <points ref={starsRef} />;
+  useEffect(() => {
+    const starsGeometry = new THREE.BufferGeometry()
+    const starsMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 2,
+      sizeAttenuation: false,
+    })
+
+    const starsVertices = []
+    for (let i = 0; i < 1000; i++) {
+      const radius = 50 + Math.random() * 50
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+
+      const x = radius * Math.sin(phi) * Math.cos(theta)
+      const y = radius * Math.sin(phi) * Math.sin(theta)
+      const z = radius * Math.cos(phi)
+
+      starsVertices.push(x, y, z)
+    }
+
+    starsGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starsVertices, 3))
+
+    if (starsRef.current) {
+      starsRef.current.geometry = starsGeometry
+      starsRef.current.material = starsMaterial
+    }
+  }, [])
+
+  return <points ref={starsRef} />
 }
 
-export default function EarthVisualization({ selectedSatellite, activeDataLayer, onSatelliteSelect, isFocusedMode = false }) {
-  const { satellites } = useData();
-  const [isLoaded, setIsLoaded] = useState(true); // Always show Earth
-  const [loadedTextures, setLoadedTextures] = useState({});
-  
+export default function EarthVisualization({
+  selectedSatellite,
+  activeDataLayer,
+  onSatelliteSelect,
+  isFocusedMode = false,
+  movingAsteroid,
+  movementProgress,
+}) {
+  const { satellites } = useData()
+  const [isLoaded, setIsLoaded] = useState(true) // Always show Earth
+  const [loadedTextures, setLoadedTextures] = useState({})
 
   useEffect(() => {
-    const loader = new THREE.TextureLoader();
+    const loader = new THREE.TextureLoader()
     // Allow loading from CDNs with CORS
-    if (loader.setCrossOrigin) loader.setCrossOrigin('anonymous');
-    const basePath = (process.env.PUBLIC_URL || '') + '/textures';
+    if (loader.setCrossOrigin) loader.setCrossOrigin("anonymous")
+    const basePath = (process.env.PUBLIC_URL || "") + "/textures"
 
     // Define candidate URLs for each texture (local first, then CDN fallbacks)
     const candidates = {
       dayMap: [
         `${basePath}/8k_earth_daymap.jpg`,
-        'https://unpkg.com/three-globe@2.30.0/example/img/earth-blue-marble.jpg',
-        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_daymap.jpg',
-        'https://unpkg.com/@pmndrs/assets@1.0.0/textures/planets/earth/day.jpg'
+        "https://unpkg.com/three-globe@2.30.0/example/img/earth-blue-marble.jpg",
+        "https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_daymap.jpg",
+        "https://unpkg.com/@pmndrs/assets@1.0.0/textures/planets/earth/day.jpg",
       ],
       nightMap: [
         `${basePath}/8k_earth_nightmap.jpg`,
-        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_nightmap.jpg'
+        "https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_nightmap.jpg",
       ],
       cloudsMap: [
         `${basePath}/8k_earth_clouds.jpg`,
-        'https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_clouds.jpg'
+        "https://raw.githubusercontent.com/itsmetommi/threejs-earth-textures/main/2k_earth_clouds.jpg",
       ],
-      milkyWay: [
-        `${basePath}/8k_stars_milky_way.jpg`
-      ]
-    };
+      milkyWay: [`${basePath}/8k_stars_milky_way.jpg`],
+    }
 
     function setCommonTextureProps(texture) {
-      if (!texture) return;
+      if (!texture) return
       // sRGB for color-correct rendering
-      if ('colorSpace' in texture) {
-        texture.colorSpace = THREE.SRGBColorSpace;
+      if ("colorSpace" in texture) {
+        texture.colorSpace = THREE.SRGBColorSpace
       } else {
         // older three fallback
-        texture.encoding = THREE.sRGBEncoding;
+        texture.encoding = THREE.sRGBEncoding
       }
-      texture.anisotropy = 8;
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.ClampToEdgeWrapping;
+      texture.anisotropy = 8
+      texture.wrapS = THREE.RepeatWrapping
+      texture.wrapT = THREE.ClampToEdgeWrapping
     }
 
     function loadFirstAvailable(urlList) {
       return new Promise((resolve) => {
         const tryNext = (idx) => {
           if (idx >= urlList.length) {
-            resolve(null);
-            return;
+            resolve(null)
+            return
           }
-          const url = urlList[idx];
+          const url = urlList[idx]
           loader.load(
             url,
             (tex) => {
-              setCommonTextureProps(tex);
-              resolve(tex);
+              setCommonTextureProps(tex)
+              resolve(tex)
             },
             undefined,
             () => {
-              tryNext(idx + 1);
-            }
-          );
-        };
-        tryNext(0);
-      });
+              tryNext(idx + 1)
+            },
+          )
+        }
+        tryNext(0)
+      })
     }
 
     function createProceduralDayTexture() {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1024;
-      canvas.height = 512;
-      const ctx = canvas.getContext('2d');
+      const canvas = document.createElement("canvas")
+      canvas.width = 1024
+      canvas.height = 512
+      const ctx = canvas.getContext("2d")
       // Ocean (brighter, more saturated)
-      const oceanGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      oceanGradient.addColorStop(0, '#1565C0');
-      oceanGradient.addColorStop(1, '#0D47A1');
-      ctx.fillStyle = oceanGradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const oceanGradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+      oceanGradient.addColorStop(0, "#1565C0")
+      oceanGradient.addColorStop(1, "#0D47A1")
+      ctx.fillStyle = oceanGradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
       // Simple continents blotches with higher contrast
-      ctx.fillStyle = '#43A047';
+      ctx.fillStyle = "#43A047"
       for (let i = 0; i < 200; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        const r = Math.random() * 55 + 25;
-        ctx.beginPath();
-        ctx.ellipse(x, y, r * 1.9, r, 0, 0, Math.PI * 2);
-        ctx.globalAlpha = 0.95;
-        ctx.fill();
+        const x = Math.random() * canvas.width
+        const y = Math.random() * canvas.height
+        const r = Math.random() * 55 + 25
+        ctx.beginPath()
+        ctx.ellipse(x, y, r * 1.9, r, 0, 0, Math.PI * 2)
+        ctx.globalAlpha = 0.95
+        ctx.fill()
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = 1
       // Add ice caps
-      const gradTop = ctx.createLinearGradient(0, 0, 0, 80);
-      gradTop.addColorStop(0, 'rgba(240,240,255,0.95)');
-      gradTop.addColorStop(1, 'rgba(240,240,255,0)');
-      ctx.fillStyle = gradTop;
-      ctx.fillRect(0, 0, canvas.width, 100);
-      const gradBottom = ctx.createLinearGradient(0, canvas.height - 80, 0, canvas.height);
-      gradBottom.addColorStop(0, 'rgba(240,240,255,0)');
-      gradBottom.addColorStop(1, 'rgba(240,240,255,0.95)');
-      ctx.fillStyle = gradBottom;
-      ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
-      const texture = new THREE.CanvasTexture(canvas);
-      setCommonTextureProps(texture);
-      return texture;
+      const gradTop = ctx.createLinearGradient(0, 0, 0, 80)
+      gradTop.addColorStop(0, "rgba(240,240,255,0.95)")
+      gradTop.addColorStop(1, "rgba(240,240,255,0)")
+      ctx.fillStyle = gradTop
+      ctx.fillRect(0, 0, canvas.width, 100)
+      const gradBottom = ctx.createLinearGradient(0, canvas.height - 80, 0, canvas.height)
+      gradBottom.addColorStop(0, "rgba(240,240,255,0)")
+      gradBottom.addColorStop(1, "rgba(240,240,255,0.95)")
+      ctx.fillStyle = gradBottom
+      ctx.fillRect(0, canvas.height - 100, canvas.width, 100)
+      const texture = new THREE.CanvasTexture(canvas)
+      setCommonTextureProps(texture)
+      return texture
     }
 
     // Set an immediate high-contrast procedural texture so Earth never appears flat
-    const immediateProcedural = createProceduralDayTexture();
-    setLoadedTextures({ dayMap: immediateProcedural });
-
-    (async () => {
+    const immediateProcedural = createProceduralDayTexture()
+    setLoadedTextures({ dayMap: immediateProcedural })
+    ;(async () => {
       const [dayMap, nightMap, cloudsMap, milkyWay] = await Promise.all([
         loadFirstAvailable(candidates.dayMap),
         loadFirstAvailable(candidates.nightMap),
         loadFirstAvailable(candidates.cloudsMap),
-        loadFirstAvailable(candidates.milkyWay)
-      ]);
+        loadFirstAvailable(candidates.milkyWay),
+      ])
 
-      const finalDayMap = dayMap || immediateProcedural || createProceduralDayTexture();
-      const textures = { dayMap: finalDayMap };
-      if (nightMap) textures.nightMap = nightMap;
-      if (cloudsMap) textures.cloudsMap = cloudsMap;
-      if (milkyWay) textures.milkyWay = milkyWay;
+      const finalDayMap = dayMap || immediateProcedural || createProceduralDayTexture()
+      const textures = { dayMap: finalDayMap }
+      if (nightMap) textures.nightMap = nightMap
+      if (cloudsMap) textures.cloudsMap = cloudsMap
+      if (milkyWay) textures.milkyWay = milkyWay
 
-      setLoadedTextures(textures);
-    })();
-  }, []);
+      setLoadedTextures(textures)
+    })()
+  }, [])
 
   return (
     <Canvas
       camera={{ position: [0, 0, 20], fov: 45 }}
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: "100%", height: "100%" }}
       gl={{ antialias: true, alpha: false }}
     >
-      <color attach="background" args={['#000']} />
-      
+      <color attach="background" args={["#000"]} />
+
       <Lighting />
       
+      {/* Milky Way Background */}
+      <MilkyWayBackground />
+
       {isLoaded && (
         <>
           {/* Always show Earth */}
@@ -504,14 +543,12 @@ export default function EarthVisualization({ selectedSatellite, activeDataLayer,
             selectedAsteroid={selectedSatellite}
             onAsteroidSelect={onSatelliteSelect}
             isFocusedMode={isFocusedMode}
+            movingAsteroid={movingAsteroid}
+            movementProgress={movementProgress}
           />
         </>
       )}
-      <CameraController 
-        selectedAsteroid={selectedSatellite} 
-        asteroids={satellites} 
-        isFocusedMode={isFocusedMode}
-      />
+      <CameraController selectedAsteroid={selectedSatellite} asteroids={satellites} isFocusedMode={isFocusedMode} />
     </Canvas>
-  );
+  )
 }

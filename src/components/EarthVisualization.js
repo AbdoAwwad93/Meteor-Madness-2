@@ -119,13 +119,13 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
         
         // Calculate camera position - closer for focused view
         const direction = asteroidPosition.clone().normalize();
-        const distance = isFocusedMode ? 5 : 15; // Closer when focused, further when just selected
+        const distance = isFocusedMode ? .5: 8; // Much closer to asteroid
         const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance));
         
         // Animate camera to new position
         const startPosition = camera.position.clone();
         const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0);
-        const duration = 2000; // 2 seconds
+        const duration = 3000; 
         const startTime = Date.now();
         
         const animateCamera = () => {
@@ -200,11 +200,11 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
       enablePan={true}
       enableZoom={true}
       enableRotate={true}
-      zoomSpeed={0.6}
+      zoomSpeed={0.4}
       panSpeed={0.5}
-      rotateSpeed={0.4}
-      minDistance={1}
-          maxDistance={500}
+      rotateSpeed={0.5}
+      minDistance={.5}
+          maxDistance={100}
       enabled={!isTransitioning} // Disable controls during transition
     />
   );

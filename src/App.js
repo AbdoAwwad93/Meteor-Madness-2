@@ -13,7 +13,7 @@ import AsteroidMovementControls from "./components/AsteroidMovementControls"
 const AppContainer = styled.div`
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: transparent;
   position: relative;
   overflow: hidden;
 `
@@ -24,6 +24,7 @@ const MainContent = styled.div`
   position: relative;
   overflow-x: hidden;
   padding-top: 60px; /* Account for navbar height */
+  background: transparent;
 `
 
 const GlobalStyle = createGlobalStyle`
@@ -102,6 +103,23 @@ const GlobalStyle = createGlobalStyle`
   select:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+  }
+
+  /* Force navbar transparency */
+  nav.transparent-navbar,
+  .transparent-navbar,
+  nav[class*="transparent"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Override any styled-components */
+  nav {
+    background: transparent !important;
+    background-color: transparent !important;
   }
 `
 
@@ -189,17 +207,20 @@ function App() {
   const [movementVelocity, setMovementVelocity] = useState(0.5)
   const [movementAnimationId, setMovementAnimationId] = useState(null)
   const [activeTab, setActiveTab] = useState('asteroid-watch')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [movementControlsOpen, setMovementControlsOpen] = useState(false)
+  const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
     setIsFocusedMode(true)
+    setCameraReachedAsteroid(false) // Reset camera reached state
   }
 
   const handleBackToEarth = () => {
     setIsFocusedMode(false)
     setSelectedSatellite(null)
+    setCameraReachedAsteroid(false)
   }
 
   const handleStartMovement = (asteroid, velocity) => {
@@ -276,9 +297,10 @@ function App() {
               isFocusedMode={isFocusedMode}
               movingAsteroid={movingAsteroid}
               movementProgress={movementProgress}
+              onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
             />
             <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
-            {selectedSatellite && <InfoPanel asteroid={selectedSatellite} onClose={() => setSelectedSatellite(null)} />}
+            {selectedSatellite && cameraReachedAsteroid && <InfoPanel asteroid={selectedSatellite} onClose={() => setSelectedSatellite(null)} />}
             {isFocusedMode && (
               <BackToEarthButton onClick={handleBackToEarth}>
                 <span className="icon">←</span>

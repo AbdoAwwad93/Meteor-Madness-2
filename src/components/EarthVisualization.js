@@ -33,7 +33,7 @@ function Earth({ activeDataLayer, textures = {} }) {
   )
 }
 
-function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
+function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid }) {
   const { camera, gl } = useThree()
   const controlsRef = useRef()
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -148,6 +148,10 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
             requestAnimationFrame(animateCamera)
           } else {
             setIsTransitioning(false)
+            // Call the callback when camera reaches the asteroid
+            if (onCameraReachedAsteroid) {
+              onCameraReachedAsteroid()
+            }
           }
         }
 
@@ -196,8 +200,8 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode }) {
       enablePan={true}
       enableZoom={true}
       enableRotate={true}
-      zoomSpeed={0.4}
-      panSpeed={0.5}
+      zoomSpeed={1}
+      panSpeed={1}
       rotateSpeed={0.5}
       minDistance={0.5}
       maxDistance={100}
@@ -393,10 +397,60 @@ export default function EarthVisualization({
   isFocusedMode = false,
   movingAsteroid,
   movementProgress,
+  onCameraReachedAsteroid,
 }) {
-  const { satellites } = useData()
+  const { satellites, loading, error } = useData()
   const [isLoaded, setIsLoaded] = useState(true) // Always show Earth
   const [loadedTextures, setLoadedTextures] = useState({})
+
+  // Debug logging
+  console.log('EarthVisualization - satellites:', satellites?.length, 'loading:', loading, 'error:', error)
+
+  // Create fallback asteroids if none are loaded
+  const fallbackAsteroids = [
+    {
+      id: 'fallback-1',
+      name: 'Didymos',
+      type: 'Near Earth Object',
+      status: 'Safe',
+      diameter: 0.8,
+      velocity: 25000,
+      distance: 1000000,
+      orbit: {
+        semiMajorAxis: 1.6,
+        eccentricity: 0.38,
+        inclination: 3.4,
+        period: 770
+      },
+      realPosition: new THREE.Vector3(12, 2, 8),
+      hasRealOrbitalData: true,
+      magnitude: 18.1,
+      discoveryDate: '1996-04-11',
+      isPotentiallyHazardous: false
+    },
+    {
+      id: 'fallback-2',
+      name: 'Bennu',
+      type: 'Near Earth Object',
+      status: 'Hazardous',
+      diameter: 0.5,
+      velocity: 30000,
+      distance: 2000000,
+      orbit: {
+        semiMajorAxis: 1.1,
+        eccentricity: 0.2,
+        inclination: 6.0,
+        period: 436
+      },
+      realPosition: new THREE.Vector3(-10, -1, 6),
+      hasRealOrbitalData: true,
+      magnitude: 20.1,
+      discoveryDate: '1999-09-11',
+      isPotentiallyHazardous: true
+    }
+  ]
+
+  const asteroidsToRender = satellites && satellites.length > 0 ? satellites : fallbackAsteroids
 
   useEffect(() => {
     const loader = new THREE.TextureLoader()
@@ -524,10 +578,9 @@ export default function EarthVisualization({
   return (
     <Canvas
       camera={{ position: [0, 0, 20], fov: 45 }}
-      style={{ width: "100%", height: "100%" }}
-      gl={{ antialias: true, alpha: false }}
+      style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}
+      gl={{ antialias: true, alpha: true }}
     >
-      <color attach="background" args={["#000"]} />
 
       <Lighting />
       
@@ -539,7 +592,7 @@ export default function EarthVisualization({
           {/* Always show Earth */}
           <Earth textures={loadedTextures} />
           <AsteroidRenderer
-            asteroids={satellites}
+            asteroids={asteroidsToRender}
             selectedAsteroid={selectedSatellite}
             onAsteroidSelect={onSatelliteSelect}
             isFocusedMode={isFocusedMode}
@@ -548,7 +601,7 @@ export default function EarthVisualization({
           />
         </>
       )}
-      <CameraController selectedAsteroid={selectedSatellite} asteroids={satellites} isFocusedMode={isFocusedMode} />
+      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} />
     </Canvas>
   )
 }

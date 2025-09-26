@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useState, useEffect } from "react"
 import { useFrame } from "@react-three/fiber"
-import { useGLTF } from "@react-three/drei"
+import { useGLTF, Text } from "@react-three/drei"
 import * as THREE from "three"
 
 function AsteroidModel({ position, rotation, isSelected, onClick }) {
@@ -69,6 +69,21 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
     </group>
   )
 }
+
+function AsteroidLabel({ position, name, isSelected }) {
+  return (
+    <Text
+      position={[position.x + 0.3, position.y + 0.1, position.z]}
+      fontSize={0.15}
+      color={isSelected ? "#00e5ff" : "white"}
+      anchorX="left"
+      anchorY="middle"
+    >
+      {name}
+    </Text>
+  )
+}
+
 
 function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }) {
   const groupRef = useRef()
@@ -149,6 +164,11 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
         rotation={rotation.current}
         isSelected={isSelected}
         onClick={() => onSelect && onSelect(asteroid)}
+      />
+      <AsteroidLabel 
+        position={position.current} 
+        name={asteroid.name} 
+        isSelected={isSelected} 
       />
     </group>
   )

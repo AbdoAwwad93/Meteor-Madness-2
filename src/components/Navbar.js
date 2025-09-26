@@ -1,132 +1,132 @@
 "use client"
 
 import { useState } from "react"
-import styled from "styled-components"
 
-const NavbarContainer = styled.nav`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: rgba(0, 0, 0, 0.9);
-  backdrop-filter: blur(15px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 30px;
-  z-index: 1000;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-`
-
-const NavLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 40px;
-`
-
-const NavRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 30px;
-`
-
-const NavButton = styled.button`
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 8px 0;
-  position: relative;
-  transition: all 0.2s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  &:hover {
-    color: #0066cc;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: #0066cc;
-    transform: scaleX(0);
-    transition: transform 0.2s ease;
-  }
-
-  &:hover::after {
-    transform: scaleX(1);
-  }
-
-  ${props => props.$active && `
-    color: #0066cc;
-    &::after {
-      transform: scaleX(1);
-    }
-  `}
-`
-
-const SearchButton = styled.button`
-  background: transparent;
-  border: none;
-  color: rgba(255, 255, 255, 0.9);
-  cursor: pointer;
-  padding: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  border-radius: 4px;
-
-  &:hover {
-    color: #0066cc;
-    background: rgba(0, 102, 204, 0.1);
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-`
-
-const Logo = styled.div`
-  color: white;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-`
 
 export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen }) {
   return (
-    <NavbarContainer>
-      <NavLeft>
-        <Logo>Meteor Madness</Logo>
-        <NavButton 
-          $active={activeTab === 'asteroid-watch' && sidebarOpen}
+    <>
+      <style>
+        {`
+          nav.transparent-navbar,
+          nav[class*="transparent"],
+          nav {
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          
+          /* Override any possible conflicting styles */
+          * {
+            box-sizing: border-box;
+          }
+          
+          nav {
+            all: unset;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            height: 60px !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding: 0 30px !important;
+            z-index: 1000 !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+          }
+        `}
+      </style>
+      <nav 
+        className="transparent-navbar"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: '60px',
+          background: 'transparent',
+          backgroundColor: 'transparent',
+          backdropFilter: 'none',
+          border: 'none',
+          boxShadow: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0 30px',
+          zIndex: 1000,
+          fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+        }}
+      >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '40px' }}>
+        <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '16px', fontWeight: 400, letterSpacing: '0.3px' }}>
+          Meteor Madness
+        </div>
+        <button 
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: activeTab === 'asteroid-watch' && sidebarOpen ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+            fontSize: '14px',
+            fontWeight: 400,
+            cursor: 'pointer',
+            padding: '8px 0',
+            transition: 'all 0.2s ease',
+            textTransform: 'none',
+            letterSpacing: '0.3px'
+          }}
           onClick={() => {
             onTabChange('asteroid-watch')
             onToggleSidebar()
           }}
         >
           Asteroid Watch
-        </NavButton>
-      </NavLeft>
+        </button>
+      </div>
       
-      <NavRight>
-        <NavButton 
-          $active={activeTab === 'move' && movementControlsOpen}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
+        <button 
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: activeTab === 'move' && movementControlsOpen ? 'rgba(255, 255, 255, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+            fontSize: '14px',
+            fontWeight: 400,
+            cursor: 'pointer',
+            padding: '8px 0',
+            transition: 'all 0.2s ease',
+            textTransform: 'none',
+            letterSpacing: '0.3px'
+          }}
           onClick={() => onToggleMovement()}
         >
           Move
-        </NavButton>
-      </NavRight>
-    </NavbarContainer>
+        </button>
+        <button style={{
+          background: 'transparent',
+          border: 'none',
+          color: 'rgba(255, 255, 255, 0.7)',
+          cursor: 'pointer',
+          padding: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.2s ease'
+        }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+    </>
   )
 }

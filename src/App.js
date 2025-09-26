@@ -214,7 +214,10 @@ function App() {
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
     setIsFocusedMode(true)
-    setCameraReachedAsteroid(false) // Reset camera reached state
+    // Only reset camera reached state if selecting a different asteroid
+    if (selectedSatellite && selectedSatellite.id !== asteroid.id) {
+      setCameraReachedAsteroid(false)
+    }
   }
 
   const handleBackToEarth = () => {

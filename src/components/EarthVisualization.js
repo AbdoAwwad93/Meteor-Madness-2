@@ -204,7 +204,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       panSpeed={1}
       rotateSpeed={0.5}
       minDistance={0.5}
-      maxDistance={100}
+      maxDistance={500}
       enabled={!isTransitioning} // Disable controls during transition
     />
   )
@@ -220,139 +220,28 @@ function Lighting() {
   )
 }
 
-function MilkyWayBackground() {
-  const [milkyWayTexture, setMilkyWayTexture] = useState(null)
-
+function MilkyWayBackground({ milkyWayTexture }) {
+  const meshRef = useRef()
+  
   useEffect(() => {
-    // Load the actual Milky Way image
-    const loader = new THREE.TextureLoader()
-    
-    // Try to load the image, with fallback to procedural generation
-    const loadImage = async () => {
-      try {
-        const texture = await new Promise((resolve, reject) => {
-          loader.load(
-            '/textures/8k_stars_milky_way.jpg',
-            (texture) => {
-              console.log('✅ Milky Way image loaded successfully!')
-              // Configure texture properties
-              texture.wrapS = THREE.RepeatWrapping
-              texture.wrapT = THREE.ClampToEdgeWrapping
-              texture.colorSpace = THREE.SRGBColorSpace
-              resolve(texture)
-            },
-            (progress) => {
-              console.log('Loading Milky Way image...', (progress.loaded / progress.total * 100) + '%')
-            },
-            (error) => {
-              console.warn('❌ Failed to load Milky Way image, using procedural background:', error)
-              reject(error)
-            }
-          )
-        })
-        setMilkyWayTexture(texture)
-      } catch (error) {
-        // Fallback to procedural generation if image fails to load
-        console.log('🔄 Creating procedural background as fallback...')
-        createProceduralBackground()
+    if (milkyWayTexture && meshRef.current) {
+      // Create a large sphere for the background
+      const geometry = new THREE.SphereGeometry(100, 32, 32)
+      const material = new THREE.MeshBasicMaterial({
+        map: milkyWayTexture,
+        side: THREE.BackSide, // Render inside of sphere
+      })
+      
+      if (meshRef.current) {
+        meshRef.current.geometry = geometry
+        meshRef.current.material = material
       }
     }
+  }, [milkyWayTexture])
 
-    const createProceduralBackground = () => {
-      const canvas = document.createElement("canvas")
-      canvas.width = 2048
-      canvas.height = 1024
-      const ctx = canvas.getContext("2d")
+  if (!milkyWayTexture) return null
 
-      // Create gradient background
-      const gradient = ctx.createRadialGradient(
-        canvas.width / 2,
-        canvas.height / 2,
-        0,
-        canvas.width / 2,
-        canvas.height / 2,
-        canvas.width / 2,
-      )
-      gradient.addColorStop(0, "rgba(100, 50, 150, 0.8)")
-      gradient.addColorStop(0.3, "rgba(50, 25, 100, 0.6)")
-      gradient.addColorStop(0.6, "rgba(25, 12, 50, 0.4)")
-      gradient.addColorStop(1, "rgba(10, 5, 20, 0.2)")
-
-      ctx.fillStyle = gradient
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-      // Add stars
-      ctx.fillStyle = "white"
-      for (let i = 0; i < 2000; i++) {
-        const x = Math.random() * canvas.width
-        const y = Math.random() * canvas.height
-        const size = Math.random() * 2
-        ctx.beginPath()
-        ctx.arc(x, y, size, 0, Math.PI * 2)
-        ctx.fill()
-      }
-
-      // Add Milky Way band
-      ctx.save()
-      ctx.translate(canvas.width / 2, canvas.height / 2)
-      ctx.rotate(-Math.PI / 6)
-
-      const milkyWayGradient = ctx.createLinearGradient(0, -canvas.height / 4, 0, canvas.height / 4)
-      milkyWayGradient.addColorStop(0, "rgba(255, 255, 255, 0)")
-      milkyWayGradient.addColorStop(0.3, "rgba(200, 180, 255, 0.3)")
-      milkyWayGradient.addColorStop(0.5, "rgba(255, 220, 180, 0.5)")
-      milkyWayGradient.addColorStop(0.7, "rgba(200, 180, 255, 0.3)")
-      milkyWayGradient.addColorStop(1, "rgba(255, 255, 255, 0)")
-
-      ctx.fillStyle = milkyWayGradient
-      ctx.fillRect(-canvas.width, -canvas.height / 4, canvas.width * 2, canvas.height / 2)
-      ctx.restore()
-
-      // Add nebula clouds
-      for (let i = 0; i < 20; i++) {
-        const x = Math.random() * canvas.width
-        const y = Math.random() * canvas.height
-        const radius = Math.random() * 100 + 50
-
-        const nebulaGradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
-        const colors = [
-          "rgba(255, 100, 150, 0.2)",
-          "rgba(100, 150, 255, 0.2)",
-          "rgba(150, 255, 100, 0.2)",
-          "rgba(255, 200, 100, 0.2)",
-        ]
-        const color = colors[Math.floor(Math.random() * colors.length)]
-
-        nebulaGradient.addColorStop(0, color)
-        nebulaGradient.addColorStop(1, "rgba(0, 0, 0, 0)")
-
-        ctx.fillStyle = nebulaGradient
-        ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
-      }
-
-      const texture = new THREE.CanvasTexture(canvas)
-      console.log('✨ Procedural background created')
-      setMilkyWayTexture(texture)
-    }
-
-    loadImage()
-  }, [])
-
-  if (!milkyWayTexture) {
-    return null
-  }
-
-  return (
-    <mesh>
-      <sphereGeometry args={[1000, 32, 16]} />
-      <meshBasicMaterial 
-        map={milkyWayTexture} 
-        side={THREE.BackSide} 
-        transparent={false}
-        fog={false}
-      />
-    </mesh>
-  )
+  return <mesh ref={meshRef} />
 }
 
 function SimpleStars() {
@@ -580,12 +469,13 @@ export default function EarthVisualization({
       camera={{ position: [0, 0, 20], fov: 45 }}
       style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}
       gl={{ antialias: true, alpha: true }}
+      scene={{ background: null }}
     >
 
       <Lighting />
       
       {/* Milky Way Background */}
-      <MilkyWayBackground />
+      <MilkyWayBackground milkyWayTexture={loadedTextures.milkyWay} />
 
       {isLoaded && (
         <>

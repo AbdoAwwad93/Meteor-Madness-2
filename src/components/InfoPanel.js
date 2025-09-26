@@ -23,7 +23,7 @@ const PanelContainer = styled.div`
   transform: translateY(-50%); /* Center vertically */
   width: 380px; /* Match image width */
   max-height: calc(100vh - 100px); /* Account for navbar and margins */
-  background: rgba(15, 15, 15, 0.95);
+  background: rgba(15, 15, 15, 0.75);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -36,7 +36,7 @@ const PanelContainer = styled.div`
 const Header = styled.div`
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(25, 25, 25, 0.9);
+  background: rgba(25, 25, 25, 0.7);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -93,7 +93,7 @@ const Header = styled.div`
 const TabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(25, 25, 25, 0.9);
+  background: rgba(25, 25, 25, 0.7);
 `
 
 const Tab = styled.button`
@@ -152,7 +152,7 @@ const ChartContainer = styled.div`
   height: 180px;
   margin-top: 16px;
   padding: 12px;
-  background: rgba(25, 25, 25, 0.9);
+  background: rgba(25, 25, 25, 0.7);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 `
@@ -163,7 +163,7 @@ const PaginationContainer = styled.div`
   justify-content: space-between;
   padding: 16px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(25, 25, 25, 0.9);
+  background: rgba(25, 25, 25, 0.7);
 `
 
 const PaginationDots = styled.div`

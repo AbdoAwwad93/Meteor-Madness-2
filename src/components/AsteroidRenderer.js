@@ -2,8 +2,36 @@
 
 import { useRef, useMemo, useState, useEffect } from "react"
 import { useFrame } from "@react-three/fiber"
-import { useGLTF } from "@react-three/drei"
+import { useGLTF, Text } from "@react-three/drei"
 import * as THREE from "three"
+
+function AsteroidLabel({ position, name, isSelected }) {
+  const textRef = useRef()
+  
+  useFrame(({ camera }) => {
+    if (textRef.current) {
+      // Make the text always face the camera
+      textRef.current.lookAt(camera.position)
+    }
+  })
+
+  return (
+    <Text
+      ref={textRef}
+      position={[position.x + 0.15, position.y + 0.15, position.z]}
+      fontSize={0.12}
+      color="#ffffff"
+      anchorX="left"
+      anchorY="middle"
+      material-transparent
+      material-opacity={isSelected ? 1.0 : 0.7}
+      outlineWidth={0.02}
+      outlineColor="#000000"
+    >
+      {name}
+    </Text>
+  )
+}
 
 function AsteroidModel({ position, rotation, isSelected, onClick }) {
   const modelRef = useRef()
@@ -149,6 +177,11 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
         rotation={rotation.current}
         isSelected={isSelected}
         onClick={() => onSelect && onSelect(asteroid)}
+      />
+      <AsteroidLabel
+        position={position.current}
+        name={asteroid.name}
+        isSelected={isSelected}
       />
     </group>
   )

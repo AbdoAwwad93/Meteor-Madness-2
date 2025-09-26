@@ -292,9 +292,6 @@ export default function EarthVisualization({
   const [isLoaded, setIsLoaded] = useState(true) // Always show Earth
   const [loadedTextures, setLoadedTextures] = useState({})
 
-  // Debug logging
-  console.log('EarthVisualization - satellites:', satellites?.length, 'loading:', loading, 'error:', error)
-
   // Create fallback asteroids if none are loaded
   const fallbackAsteroids = [
     {

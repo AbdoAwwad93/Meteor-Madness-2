@@ -207,7 +207,7 @@ function App() {
   const [movementVelocity, setMovementVelocity] = useState(0.5)
   const [movementAnimationId, setMovementAnimationId] = useState(null)
   const [activeTab, setActiveTab] = useState('asteroid-watch')
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [movementControlsOpen, setMovementControlsOpen] = useState(false)
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
 

@@ -294,7 +294,7 @@ export default function InfoPanel({ asteroid, onClose }) {
       <Header $status={asteroid.status}>
         <div className="title-section">
           <div className="asteroid-icon">◆</div>
-          <h2>65803 Didymos</h2>
+          <h2>{asteroid.name || 'Unknown Asteroid'}</h2>
         </div>
         <button className="back-arrow" onClick={onClose}>←</button>
       </Header>
@@ -333,7 +333,8 @@ export default function InfoPanel({ asteroid, onClose }) {
                     lineHeight: '1.5',
                     marginBottom: '20px'
                   }}>
-                    Discovered in 1996, Didymos is part of a binary asteroid system with its smaller partner, Dimorphos. The DART mission targeted this system.
+                    {asteroid.type || 'Near Earth Object'} discovered on {formatDate(asteroid.discoveryDate)}. 
+                    {asteroid.isPotentiallyHazardous ? ' This asteroid is classified as potentially hazardous.' : ' This asteroid poses no immediate threat to Earth.'}
                   </p>
                 </div>
 
@@ -449,7 +450,7 @@ export default function InfoPanel({ asteroid, onClose }) {
 
                 <DataRow>
                   <span className="label">Monitoring Status:</span>
-                  <span className="value">Active</span>
+                  <span className="value">{asteroid.isPotentiallyHazardous ? "Active Monitoring" : "Routine Tracking"}</span>
                 </DataRow>
               </>
             )}

@@ -143,3 +143,4 @@ function getAsteroidComposition(diameter) {
   if (diameter < 10) return Math.random() > 0.3 ? 'Stony-Iron' : 'Iron'
   return 'Carbonaceous'
 }
+

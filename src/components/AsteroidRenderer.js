@@ -99,13 +99,13 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
   )
 }
 
-function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }) {
+function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, targetPosition }) {
   const groupRef = useRef()
   const position = useRef(new THREE.Vector3())
   const rotation = useRef(new THREE.Euler())
   const originalPosition = useRef(new THREE.Vector3())
   const animatedPosition = useRef(new THREE.Vector3())
-  const targetPosition = useRef(new THREE.Vector3())
+  const targetPositionRef = useRef(new THREE.Vector3())
 
   useMemo(() => {
     if (asteroid.hasRealOrbitalData && asteroid.realPosition) {
@@ -116,13 +116,13 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
         // Calculate target position - use the target position passed from parent
         let targetPosition3D
         
-        if (asteroid.targetPosition) {
+        if (targetPosition) {
           // Target specific position on Earth surface
-          if (asteroid.targetPosition.point) {
-            targetPosition3D = asteroid.targetPosition.point.clone()
+          if (targetPosition.point) {
+            targetPosition3D = targetPosition.point.clone()
           } else {
             // Fallback to lat/lng conversion
-            targetPosition3D = latLngTo3D(asteroid.targetPosition.lat, asteroid.targetPosition.lng, 5.1)
+            targetPosition3D = latLngTo3D(targetPosition.lat, targetPosition.lng, 5.1)
           }
         } else {
           // Fallback to Earth center
@@ -133,12 +133,12 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
         const distance = direction.length()
 
         // Stop when very close to target (within 0.1 units for surface targets, 5.1 for Earth center)
-        const minDistance = asteroid.targetPosition ? 0.1 : 5.1
+        const minDistance = targetPosition ? 0.1 : 5.1
         const maxProgress = Math.max(0, (distance - minDistance) / distance)
         const clampedProgress = Math.min(movementProgress, maxProgress)
 
-        targetPosition.current.copy(originalPosition.current)
-        targetPosition.current.add(direction.multiplyScalar(clampedProgress))
+        targetPositionRef.current.copy(originalPosition.current)
+        targetPositionRef.current.add(direction.multiplyScalar(clampedProgress))
 
         // Initialize animated position if this is the start of movement
         if (movementProgress === 0) {
@@ -148,7 +148,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
         // Use original position when not moving
         position.current.copy(asteroid.realPosition)
         animatedPosition.current.copy(asteroid.realPosition)
-        targetPosition.current.copy(asteroid.realPosition)
+        targetPositionRef.current.copy(asteroid.realPosition)
       }
     } else {
       throw new Error(`Asteroid ${asteroid.name} missing real orbital data`)
@@ -170,6 +170,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
     asteroid.realPosition,
     isMoving,
     movementProgress,
+    targetPosition,
   ])
 
   useFrame((state, delta) => {
@@ -182,7 +183,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress }
     if (isMoving && movementProgress !== undefined) {
       // Smooth interpolation towards target position
       const lerpFactor = Math.min(delta * 8, 1) // Adjust speed of interpolation
-      animatedPosition.current.lerp(targetPosition.current, lerpFactor)
+      animatedPosition.current.lerp(targetPositionRef.current, lerpFactor)
       position.current.copy(animatedPosition.current)
     }
   })
@@ -321,11 +322,13 @@ export default function AsteroidRenderer({
       {asteroidsToShow.map((asteroid) => {
         // If this is the moving asteroid and we have a target position, reposition it
         let asteroidToRender = asteroid
-        if (movingAsteroid && movingAsteroid.id === asteroid.id && targetPosition) {
+        if (movingAsteroid && movingAsteroid.id === asteroid.id && movingAsteroid.targetPosition) {
           // Create a new asteroid object with repositioned coordinates
           const originalDistance = asteroid.realPosition ? asteroid.realPosition.length() : 20
-          const targetDirection = targetPosition.point ? targetPosition.point.clone() : latLngTo3D(targetPosition.lat, targetPosition.lng, 1)
-          const repositionedPosition = targetDirection.normalize().multiplyScalar(originalDistance)
+          const targetDirection = movingAsteroid.targetPosition.point ? 
+            movingAsteroid.targetPosition.point.clone() : 
+            latLngTo3D(movingAsteroid.targetPosition.lat, movingAsteroid.targetPosition.lng, 5.1)
+          const repositionedPosition = targetDirection.clone().normalize().multiplyScalar(originalDistance)
           
           asteroidToRender = {
             ...asteroid,
@@ -341,6 +344,7 @@ export default function AsteroidRenderer({
               onSelect={onAsteroidSelect}
               isMoving={movingAsteroid && movingAsteroid.id === asteroid.id}
               movementProgress={movingAsteroid && movingAsteroid.id === asteroid.id ? movementProgress : undefined}
+              targetPosition={movingAsteroid && movingAsteroid.id === asteroid.id ? movingAsteroid.targetPosition : undefined}
             />
           </group>
         )

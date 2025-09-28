@@ -1,3 +1,5 @@
+import * as THREE from 'three'
+
 // Major world cities with coordinates, population, and metadata
 export const cities = [
   {
@@ -203,15 +205,18 @@ export const cities = [
 ]
 
 // Convert lat/lng to 3D coordinates on Earth sphere
+// Using the same logic as EarthVisualization.js handleClick (inverse conversion)
 export function latLngTo3D(lat, lng, radius = 5) {
-  const phi = (90 - lat) * (Math.PI / 180)
-  const theta = (lng + 180) * (Math.PI / 180)
+  // Convert lat/lng to radians
+  const latRad = lat * (Math.PI / 180)
+  const lngRad = lng * (Math.PI / 180)
   
-  return {
-    x: radius * Math.sin(phi) * Math.cos(theta),
-    y: radius * Math.cos(phi),
-    z: radius * Math.sin(phi) * Math.sin(theta)
-  }
+  // Use the inverse of the Earth click conversion logic
+  const x = radius * Math.cos(latRad) * Math.cos(lngRad)
+  const y = radius * Math.sin(latRad)
+  const z = radius * Math.cos(latRad) * Math.sin(lngRad)
+  
+  return new THREE.Vector3(x, y, z)
 }
 
 // Get city by ID
@@ -223,3 +228,4 @@ export function getCityById(id) {
 export function getCitiesByPopulation() {
   return [...cities].sort((a, b) => b.population - a.population)
 }
+

@@ -165,6 +165,51 @@ const BackToEarthButton = styled.button`
     transform: translateX(-2px);
   }
 `
+
+const ImpactWarning = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 0, 0, 0.9);
+  border: 2px solid #ff4757;
+  border-radius: 12px;
+  padding: 30px 40px;
+  color: white;
+  text-align: center;
+  z-index: 2000;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 20px 60px rgba(255, 0, 0, 0.5);
+  animation: pulse 1s infinite;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  max-width: 400px;
+
+  @keyframes pulse {
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+    opacity: 0.9;
+    margin-bottom: 15px;
+  }
+
+  .countdown {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffcc00;
+  }
+`
 const LoadingScreen = styled.div`
   position: absolute;
   top: 0;
@@ -210,8 +255,7 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [movementControlsOpen, setMovementControlsOpen] = useState(false)
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
-  const [targetPosition, setTargetPosition] = useState(null)
-  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [showImpactWarning, setShowImpactWarning] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
@@ -245,12 +289,34 @@ function App() {
 
       setMovementProgress(progress)
 
+      // Show impact warning when progress is above 90%
+      if (progress > 0.9 && !showImpactWarning) {
+        setShowImpactWarning(true)
+      }
+
       if (progress < 1) {
         const animId = requestAnimationFrame(animate)
         setMovementAnimationId(animId)
       } else {
         setMovementAnimationId(null)
         console.log("[v0] Asteroid movement completed - Impact!")
+        
+        // Navigate to map page when asteroid reaches Earth
+        setTimeout(() => {
+          // Pass city data via URL parameters
+          const cityData = asteroid.targetCity
+          if (cityData) {
+            const params = new URLSearchParams({
+              city: cityData.name,
+              lat: cityData.lat.toString(),
+              lng: cityData.lng.toString(),
+              country: cityData.country || ''
+            })
+            window.location.href = `/map_page.html?${params.toString()}`
+          } else {
+            window.location.href = '/map_page.html'
+          }
+        }, 1000) // Small delay to show the impact
       }
     }
 
@@ -265,13 +331,9 @@ function App() {
     }
     setMovingAsteroid(null)
     setMovementProgress(0)
-    setTargetPosition(null)
-    setIsSelectionMode(false)
+    setShowImpactWarning(false)
   }
 
-  const handleEarthClick = (clickData) => {
-    setTargetPosition(clickData)
-  }
 
   const handleTabChange = (tab) => {
     setActiveTab(tab)
@@ -309,9 +371,6 @@ function App() {
               movingAsteroid={movingAsteroid}
               movementProgress={movementProgress}
               onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
-              targetPosition={targetPosition}
-              onEarthClick={handleEarthClick}
-              allowSelection={isSelectionMode}
             />
             <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
             {selectedSatellite && cameraReachedAsteroid && <InfoPanel asteroid={selectedSatellite} onClose={() => setSelectedSatellite(null)} />}
@@ -321,14 +380,18 @@ function App() {
                 Back to Earth
               </BackToEarthButton>
             )}
+            {showImpactWarning && (
+              <ImpactWarning>
+                <div className="title">⚠️ IMPACT IMMINENT</div>
+                <div className="subtitle">Asteroid approaching Earth!</div>
+                <div className="countdown">Redirecting to impact analysis...</div>
+              </ImpactWarning>
+            )}
             <AsteroidMovementControls
               onStartMovement={handleStartMovement}
               onStopMovement={handleStopMovement}
               isMoving={!!movingAsteroid}
               isOpen={movementControlsOpen}
-              targetPosition={targetPosition}
-              onTargetPositionChange={setTargetPosition}
-              onSelectionModeChange={setIsSelectionMode}
             />
           </MainContent>
         </AppContainer>

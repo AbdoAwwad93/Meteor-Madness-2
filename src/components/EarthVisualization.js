@@ -2,13 +2,14 @@
 
 import { useRef, useEffect, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
+import { OrbitControls, Text } from "@react-three/drei"
 import * as THREE from "three"
 import { useData } from "../context/DataContext"
 import { useTime } from "../context/TimeContext"
 import AsteroidRenderer from "./AsteroidRenderer"
+import { cities, latLngTo3D } from "../data/cities"
 
-function Earth({ activeDataLayer, textures = {} }) {
+function Earth({ activeDataLayer, textures = {}, onEarthClick, allowSelection = false }) {
   const meshRef = useRef()
   const { currentTime } = useTime()
 
@@ -16,16 +17,33 @@ function Earth({ activeDataLayer, textures = {} }) {
     if (meshRef.current) {
       // Rotate Earth based on time
       meshRef.current.rotation.y = (currentTime.getTime() / 86400000) * Math.PI * 2
-      // Debug: log that Earth is rendering
-      if (state.clock.elapsedTime < 1) {
-      }
     }
   })
 
+  const handleClick = (event) => {
+    if (allowSelection && onEarthClick) {
+      // Get the intersection point
+      const intersection = event.intersections[0]
+      if (intersection) {
+        const point = intersection.point
+        // Convert 3D point to lat/lng
+        const lat = Math.asin(point.y / 5) * (180 / Math.PI)
+        const lng = Math.atan2(point.z, point.x) * (180 / Math.PI)
+        onEarthClick({ lat, lng, point: point.clone() })
+      }
+    }
+  }
+
   return (
     <group>
-      {/* Single Earth sphere */}
-      <mesh ref={meshRef} position={[0, 0, 0]}>
+      {/* Clickable Earth sphere */}
+      <mesh 
+        ref={meshRef} 
+        position={[0, 0, 0]} 
+        onClick={handleClick}
+        userData={{ isEarth: true }}
+        style={{ cursor: allowSelection ? 'crosshair' : 'default' }}
+      >
         <sphereGeometry args={[5, 64, 32]} />
         <meshPhongMaterial map={textures.dayMap} color={textures.dayMap ? undefined : "#4a90e2"} shininess={100} />
       </mesh>
@@ -279,6 +297,107 @@ function SimpleStars() {
   return <points ref={starsRef} />
 }
 
+
+function TrajectoryLine({ asteroid, targetPosition, progress = 0 }) {
+  if (!asteroid || !targetPosition) return null
+
+  const startPosition = asteroid.realPosition || new THREE.Vector3(0, 0, 0)
+  // Use the point property which is already a Vector3, or create from lat/lng
+  const endPosition = targetPosition.point ? targetPosition.point.clone() : latLngTo3D(targetPosition.lat, targetPosition.lng, 5.1)
+  
+  // Calculate current position along trajectory
+  const currentPosition = startPosition.clone().lerp(endPosition, progress)
+  
+  // Create trajectory points
+  const points = []
+  const numPoints = 50
+  for (let i = 0; i <= numPoints; i++) {
+    const t = i / numPoints
+    const point = startPosition.clone().lerp(endPosition, t)
+    points.push(point)
+  }
+
+  const geometry = new THREE.BufferGeometry().setFromPoints(points)
+  
+  return (
+    <group>
+      {/* Full trajectory line (dashed) */}
+      <line geometry={geometry}>
+        <lineDashedMaterial
+          color="#ff4757"
+          transparent
+          opacity={0.6}
+          dashSize={0.1}
+          gapSize={0.05}
+          linewidth={2}
+        />
+      </line>
+      
+      {/* Current position marker */}
+      <mesh position={currentPosition}>
+        <sphereGeometry args={[0.05, 8, 6]} />
+        <meshBasicMaterial color="#ff4757" />
+      </mesh>
+      
+      {/* Pulsing effect at current position */}
+      <mesh position={currentPosition}>
+        <ringGeometry args={[0.08, 0.12, 16]} />
+        <meshBasicMaterial 
+          color="#ff4757" 
+          transparent 
+          opacity={0.5}
+        />
+      </mesh>
+    </group>
+  )
+}
+
+function ImpactEffect({ targetPosition, isVisible }) {
+  if (!isVisible || !targetPosition) return null
+
+  // Use the point property which is already a Vector3, or create from lat/lng
+  const position = targetPosition.point ? targetPosition.point.clone() : latLngTo3D(targetPosition.lat, targetPosition.lng, 5.1)
+  
+  return (
+    <group position={[position.x, position.y, position.z]}>
+      {/* Impact crater */}
+      <mesh>
+        <cylinderGeometry args={[0.2, 0.3, 0.1, 16]} />
+        <meshBasicMaterial color="#8B4513" transparent opacity={0.8} />
+      </mesh>
+      
+      {/* Explosion effect */}
+      <mesh>
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshBasicMaterial 
+          color="#ff4500" 
+          transparent 
+          opacity={0.3}
+        />
+      </mesh>
+      
+      {/* Shockwave rings */}
+      <mesh>
+        <ringGeometry args={[0.6, 0.8, 32]} />
+        <meshBasicMaterial 
+          color="#ff0000" 
+          transparent 
+          opacity={0.4}
+        />
+      </mesh>
+      
+      <mesh>
+        <ringGeometry args={[1.0, 1.2, 32]} />
+        <meshBasicMaterial 
+          color="#ff8800" 
+          transparent 
+          opacity={0.2}
+        />
+      </mesh>
+    </group>
+  )
+}
+
 export default function EarthVisualization({
   selectedSatellite,
   activeDataLayer,
@@ -287,6 +406,9 @@ export default function EarthVisualization({
   movingAsteroid,
   movementProgress,
   onCameraReachedAsteroid,
+  targetPosition,
+  onEarthClick,
+  allowSelection = false,
 }) {
   const { satellites, loading, error } = useData()
   const [isLoaded, setIsLoaded] = useState(true) // Always show Earth
@@ -477,7 +599,9 @@ export default function EarthVisualization({
       {isLoaded && (
         <>
           {/* Always show Earth */}
-          <Earth textures={loadedTextures} />
+          <Earth textures={loadedTextures} onEarthClick={onEarthClick} allowSelection={allowSelection} />
+          
+          
           <AsteroidRenderer
             asteroids={asteroidsToRender}
             selectedAsteroid={selectedSatellite}
@@ -485,7 +609,12 @@ export default function EarthVisualization({
             isFocusedMode={isFocusedMode}
             movingAsteroid={movingAsteroid}
             movementProgress={movementProgress}
+            targetPosition={targetPosition}
           />
+          
+          {/* Trajectory line removed as requested */}
+          
+          {/* Impact effects removed as requested */}
         </>
       )}
       <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} />

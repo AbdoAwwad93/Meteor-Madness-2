@@ -210,6 +210,8 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [movementControlsOpen, setMovementControlsOpen] = useState(false)
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
+  const [targetPosition, setTargetPosition] = useState(null)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
@@ -248,7 +250,7 @@ function App() {
         setMovementAnimationId(animId)
       } else {
         setMovementAnimationId(null)
-        console.log("[v0] Asteroid movement completed")
+        console.log("[v0] Asteroid movement completed - Impact!")
       }
     }
 
@@ -263,6 +265,12 @@ function App() {
     }
     setMovingAsteroid(null)
     setMovementProgress(0)
+    setTargetPosition(null)
+    setIsSelectionMode(false)
+  }
+
+  const handleEarthClick = (clickData) => {
+    setTargetPosition(clickData)
   }
 
   const handleTabChange = (tab) => {
@@ -301,6 +309,9 @@ function App() {
               movingAsteroid={movingAsteroid}
               movementProgress={movementProgress}
               onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
+              targetPosition={targetPosition}
+              onEarthClick={handleEarthClick}
+              allowSelection={isSelectionMode}
             />
             <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
             {selectedSatellite && cameraReachedAsteroid && <InfoPanel asteroid={selectedSatellite} onClose={() => setSelectedSatellite(null)} />}
@@ -315,6 +326,9 @@ function App() {
               onStopMovement={handleStopMovement}
               isMoving={!!movingAsteroid}
               isOpen={movementControlsOpen}
+              targetPosition={targetPosition}
+              onTargetPositionChange={setTargetPosition}
+              onSelectionModeChange={setIsSelectionMode}
             />
           </MainContent>
         </AppContainer>

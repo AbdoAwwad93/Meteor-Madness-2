@@ -3,6 +3,7 @@
 import { useState } from "react"
 import styled from "styled-components"
 import { useData } from "../context/DataContext"
+import { enhanceAsteroidData, calculateTimeToImpact, formatTimeDuration } from "../utils/asteroidCalculations"
 
 const ControlsContainer = styled.div`
   position: fixed;
@@ -221,6 +222,66 @@ const StatusDisplay = styled.div`
   }
 `
 
+const ImpactPreview = styled.div`
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 0, 0, 0.1);
+  border: 1px solid rgba(255, 0, 0, 0.3);
+  border-radius: 6px;
+  
+  .title {
+    color: #ff4757;
+    font-weight: 600;
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .impact-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 11px;
+    
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255, 255, 255, 0.8);
+      
+      .label {
+        color: rgba(255, 255, 255, 0.6);
+      }
+      
+      .value {
+        font-weight: 500;
+        color: #ff4757;
+      }
+    }
+  }
+`
+
+const TargetInfo = styled.div`
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(0, 102, 204, 0.1);
+  border: 1px solid rgba(0, 102, 204, 0.3);
+  border-radius: 4px;
+  font-size: 11px;
+  
+  .target-coords {
+    font-weight: 600;
+    color: #0066cc;
+    margin-bottom: 2px;
+  }
+  
+  .target-details {
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: space-between;
+  }
+`
+
 const Header = styled.div`
   margin-bottom: 16px;
   padding-bottom: 12px;
@@ -241,22 +302,34 @@ const Header = styled.div`
   }
 `
 
-export default function AsteroidMovementControls({ onStartMovement, onStopMovement, isMoving, isOpen }) {
+export default function AsteroidMovementControls({ onStartMovement, onStopMovement, isMoving, isOpen, targetPosition, onTargetPositionChange, onSelectionModeChange }) {
   const { satellites } = useData()
   const [showControls, setShowControls] = useState(false)
   const [selectedAsteroid, setSelectedAsteroid] = useState("")
   const [velocity, setVelocity] = useState("")
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
 
   const handleStartMovement = () => {
-    if (!selectedAsteroid) return
+    if (!selectedAsteroid || !targetPosition) return
 
     const asteroid = satellites.find((a) => a.id === selectedAsteroid)
     if (!asteroid) return
 
     const finalVelocity = velocity ? Number.parseFloat(velocity) : asteroid.velocity || 0.5
 
-    onStartMovement(asteroid, finalVelocity)
+    // Enhance asteroid data with calculated properties
+    const enhancedAsteroid = enhanceAsteroidData(asteroid)
+    
+    // Add target position information
+    const asteroidWithTarget = {
+      ...enhancedAsteroid,
+      targetPosition: targetPosition
+    }
+
+    onStartMovement(asteroidWithTarget, finalVelocity)
     setShowControls(false)
+    setIsSelectionMode(false)
+    if (onSelectionModeChange) onSelectionModeChange(false)
   }
 
   const handleStopMovement = () => {
@@ -264,6 +337,38 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     setShowControls(false)
     setSelectedAsteroid("")
     setVelocity("")
+    setIsSelectionMode(false)
+    if (onSelectionModeChange) onSelectionModeChange(false)
+  }
+
+  const handleAsteroidSelect = (asteroidId) => {
+    setSelectedAsteroid(asteroidId)
+    if (asteroidId) {
+      setIsSelectionMode(true)
+      if (onSelectionModeChange) onSelectionModeChange(true)
+    } else {
+      setIsSelectionMode(false)
+      if (onSelectionModeChange) onSelectionModeChange(false)
+    }
+  }
+
+  // Calculate impact preview when both asteroid and target are selected
+  const getImpactPreview = () => {
+    if (!selectedAsteroid || !targetPosition) return null
+
+    const asteroid = satellites.find((a) => a.id === selectedAsteroid)
+    if (!asteroid) return null
+
+    const enhancedAsteroid = enhanceAsteroidData(asteroid)
+    const timeToImpact = calculateTimeToImpact(asteroid.distance || 1000000, enhancedAsteroid.velocity / 1000)
+
+    return {
+      energyTNT: enhancedAsteroid.energyTNT,
+      craterDiameter: enhancedAsteroid.craterDiameter,
+      damageRadius: enhancedAsteroid.damageRadius,
+      timeToImpact: formatTimeDuration(timeToImpact),
+      severity: enhancedAsteroid.severity
+    }
   }
 
   if (!showControls && !isMoving) {
@@ -289,11 +394,18 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     )
   }
 
+  const impactPreview = getImpactPreview()
+
   return (
     <ControlsContainer $isOpen={isOpen}>
+      <Header>
+        <div className="title">Asteroid Impact Simulation</div>
+        <div className="subtitle">Select asteroid and click on Earth to target</div>
+      </Header>
+
       <FormGroup>
         <label>Select Asteroid</label>
-        <select value={selectedAsteroid} onChange={(e) => setSelectedAsteroid(e.target.value)}>
+        <select value={selectedAsteroid} onChange={(e) => handleAsteroidSelect(e.target.value)}>
           <option value="">Select Asteroid...</option>
           {satellites.map((asteroid) => (
             <option key={asteroid.id} value={asteroid.id}>
@@ -303,27 +415,104 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
         </select>
       </FormGroup>
 
+      {targetPosition && (
+        <TargetInfo>
+          <div className="target-coords">Target Selected</div>
+          <div className="target-details">
+            <span>Lat: {targetPosition.lat?.toFixed(2)}°</span>
+            <span>Lng: {targetPosition.lng?.toFixed(2)}°</span>
+          </div>
+        </TargetInfo>
+      )}
+
+      {!targetPosition && selectedAsteroid && (
+        <div style={{ 
+          padding: '12px', 
+          background: 'rgba(255, 193, 7, 0.1)', 
+          border: '1px solid rgba(255, 193, 7, 0.3)', 
+          borderRadius: '4px',
+          fontSize: '12px',
+          color: '#ffc107',
+          textAlign: 'center',
+          marginBottom: '12px'
+        }}>
+          Click anywhere on Earth to select target
+        </div>
+      )}
+
+      {!selectedAsteroid && (
+        <div style={{ 
+          padding: '12px', 
+          background: 'rgba(100, 100, 100, 0.1)', 
+          border: '1px solid rgba(100, 100, 100, 0.3)', 
+          borderRadius: '4px',
+          fontSize: '12px',
+          color: '#666666',
+          textAlign: 'center',
+          marginBottom: '12px'
+        }}>
+          Select an asteroid first to enable targeting
+        </div>
+      )}
+
       <FormGroup>
-        <label>Velocity Override</label>
+        <label>Velocity Override (km/s)</label>
         <input
           type="number"
           step="0.1"
           min="0.1"
-          max="5"
+          max="50"
           value={velocity}
           onChange={(e) => setVelocity(e.target.value)}
           placeholder={
             selectedAsteroid
-              ? `Default: ${satellites.find((a) => a.id === selectedAsteroid)?.velocity || 0.5}`
+              ? `Default: ${((satellites.find((a) => a.id === selectedAsteroid)?.velocity || 25000) / 1000).toFixed(1)}`
               : "Use default velocity"
           }
         />
       </FormGroup>
 
-      <SecondaryButton onClick={handleStartMovement} disabled={!selectedAsteroid}>
-        <span className="icon"></span>
-        Start
-      </SecondaryButton>
+      {impactPreview && (
+        <ImpactPreview>
+          <div className="title">Impact Preview</div>
+          <div className="impact-stats">
+            <div className="stat">
+              <span className="label">Energy:</span>
+              <span className="value">{impactPreview.energyTNT.toFixed(1)} TNT</span>
+            </div>
+            <div className="stat">
+              <span className="label">Crater:</span>
+              <span className="value">{impactPreview.craterDiameter.toFixed(1)} km</span>
+            </div>
+            <div className="stat">
+              <span className="label">Damage Radius:</span>
+              <span className="value">{impactPreview.damageRadius.toFixed(1)} km</span>
+            </div>
+            <div className="stat">
+              <span className="label">Time to Impact:</span>
+              <span className="value">{impactPreview.timeToImpact}</span>
+            </div>
+            <div className="stat">
+              <span className="label">Severity:</span>
+              <span className="value" style={{ color: impactPreview.severity.color }}>
+                {impactPreview.severity.level}
+              </span>
+            </div>
+          </div>
+        </ImpactPreview>
+      )}
+
+      <PrimaryButton 
+        onClick={handleStartMovement} 
+        disabled={!selectedAsteroid || !targetPosition}
+        style={{ 
+          background: impactPreview?.severity.color || '#0066cc',
+          borderColor: impactPreview?.severity.color || '#0088ff'
+        }}
+      >
+        <span className="icon">🚀</span>
+        Launch Impact Simulation
+      </PrimaryButton>
 
       <SecondaryButton onClick={() => setShowControls(false)}>Cancel Mission</SecondaryButton>
     </ControlsContainer>

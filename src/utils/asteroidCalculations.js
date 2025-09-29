@@ -144,3 +144,4 @@ function getAsteroidComposition(diameter) {
   return 'Carbonaceous'
 }
 
+

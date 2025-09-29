@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { useData } from "../context/DataContext"
-import { enhanceAsteroidData, calculateTimeToImpact, formatTimeDuration } from "../utils/asteroidCalculations"
 
 const ControlsContainer = styled.div`
   position: fixed;
@@ -232,44 +231,6 @@ const StatusDisplay = styled.div`
   }
 `
 
-const ImpactPreview = styled.div`
-  margin-bottom: 12px;
-  padding: 10px;
-  background: rgba(255, 0, 0, 0.1);
-  border: 1px solid rgba(255, 0, 0, 0.3);
-  border-radius: 6px;
-  
-  .title {
-    color: #ff4757;
-    font-weight: 600;
-    font-size: 11px;
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  .impact-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    font-size: 10px;
-    
-    .stat {
-      display: flex;
-      justify-content: space-between;
-      color: rgba(255, 255, 255, 0.8);
-      
-      .label {
-        color: rgba(255, 255, 255, 0.6);
-      }
-      
-      .value {
-        font-weight: 500;
-        color: #ff4757;
-      }
-    }
-  }
-`
 
 const TargetInfo = styled.div`
   margin-bottom: 12px;
@@ -470,12 +431,9 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
 
     const finalVelocity = velocity ? Number.parseFloat(velocity) : asteroid.velocity || 0.5
 
-    // Enhance asteroid data with calculated properties
-    const enhancedAsteroid = enhanceAsteroidData(asteroid)
-    
     // Add target city information
     const asteroidWithTarget = {
-      ...enhancedAsteroid,
+      ...asteroid,
       targetCity: selectedCity,
       targetPosition: {
         lat: selectedCity.lat,
@@ -519,24 +477,6 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     }
   }
 
-  // Calculate impact preview when both asteroid and target are selected
-  const getImpactPreview = () => {
-    if (!selectedAsteroid || !selectedCity) return null
-
-    const asteroid = satellites.find((a) => a.id === selectedAsteroid)
-    if (!asteroid) return null
-
-    const enhancedAsteroid = enhanceAsteroidData(asteroid)
-    const timeToImpact = calculateTimeToImpact(asteroid.distance || 1000000, enhancedAsteroid.velocity / 1000)
-
-    return {
-      energyTNT: enhancedAsteroid.energyTNT,
-      craterDiameter: enhancedAsteroid.craterDiameter,
-      damageRadius: enhancedAsteroid.damageRadius,
-      timeToImpact: formatTimeDuration(timeToImpact),
-      severity: enhancedAsteroid.severity
-    }
-  }
 
   if (!showControls && !isMoving) {
     return (
@@ -560,8 +500,6 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
       </ControlsContainer>
     )
   }
-
-  const impactPreview = getImpactPreview()
 
   return (
     <ControlsContainer $isOpen={isOpen}>
@@ -674,43 +612,9 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
         />
       </FormGroup>
 
-      {impactPreview && (
-        <ImpactPreview>
-          <div className="title">Impact Preview</div>
-          <div className="impact-stats">
-            <div className="stat">
-              <span className="label">Energy:</span>
-              <span className="value">{impactPreview.energyTNT.toFixed(1)} TNT</span>
-            </div>
-            <div className="stat">
-              <span className="label">Crater:</span>
-              <span className="value">{impactPreview.craterDiameter.toFixed(1)} km</span>
-            </div>
-            <div className="stat">
-              <span className="label">Damage Radius:</span>
-              <span className="value">{impactPreview.damageRadius.toFixed(1)} km</span>
-            </div>
-            <div className="stat">
-              <span className="label">Time to Impact:</span>
-              <span className="value">{impactPreview.timeToImpact}</span>
-            </div>
-            <div className="stat">
-              <span className="label">Severity:</span>
-              <span className="value" style={{ color: impactPreview.severity.color }}>
-                {impactPreview.severity.level}
-              </span>
-            </div>
-          </div>
-        </ImpactPreview>
-      )}
-
       <PrimaryButton 
         onClick={handleStartMovement} 
         disabled={!selectedAsteroid || !selectedCity}
-        style={{ 
-          background: impactPreview?.severity.color || '#0066cc',
-          borderColor: impactPreview?.severity.color || '#0088ff'
-        }}
       >
         <span className="icon">🚀</span>
         Launch Impact Simulation

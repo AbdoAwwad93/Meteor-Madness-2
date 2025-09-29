@@ -211,6 +211,249 @@
         .back-to-earth-btn:hover .icon {
             transform: translateX(-2px);
         }
+
+        /* Impact Analysis Panel */
+        .impact-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            min-width: 350px;
+            max-width: 450px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            transform: translateX(-100%);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+
+        .impact-panel.visible {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .impact-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .impact-title {
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        .impact-subtitle {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 400;
+        }
+
+        .severity-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #333;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #00e5ff;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .impact-zone {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .zone-title {
+            color: #ff4757;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .zone-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        .zone-stat {
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .zone-stat .label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .zone-stat .value {
+            font-weight: 500;
+            color: #ff4757;
+        }
+
+        .volcanic-info {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .volcanic-info.affected {
+            background: rgba(255, 140, 0, 0.1);
+            border: 1px solid rgba(255, 140, 0, 0.3);
+        }
+
+        .volcanic-title {
+            color: #00ff88;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .volcanic-info.affected .volcanic-title {
+            color: #ff8c00;
+        }
+
+        .volcanic-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .location-info {
+            background: rgba(0, 102, 204, 0.1);
+            border: 1px solid rgba(0, 102, 204, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .location-title {
+            color: #0066cc;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .location-details {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-button:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #00e5ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .error-message {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: #ff4757;
+            font-size: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -240,6 +483,20 @@
     
     <!-- Main Map Container -->
     <div id="map"></div>
+
+    <!-- Impact Analysis Panel -->
+    <div class="impact-panel" id="impactPanel">
+        <button class="close-button" id="closeImpactPanel">×</button>
+        <div class="impact-header">
+            <div class="impact-title">Impact Analysis</div>
+            <div class="impact-subtitle" id="impactSubtitle">Calculating impact data...</div>
+        </div>
+        <div id="impactContent">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Back to Earth Button -->
     <button class="back-to-earth-btn" id="backToEarthBtn">

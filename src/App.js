@@ -311,7 +311,10 @@ function App() {
               city: cityData.name,
               lat: cityData.lat.toString(),
               lng: cityData.lng.toString(),
-              country: cityData.country || ''
+              country: cityData.country || '',
+              asteroidName: asteroid.name || '',
+              asteroidDiameter: (asteroid.diameter || 0.5).toString(),
+              asteroidVelocity: ((asteroid.velocity || 25000) / 1000).toString()
             })
             window.location.href = `/map_page.html?${params.toString()}`
           } else {

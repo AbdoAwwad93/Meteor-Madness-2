@@ -1,5 +1,6 @@
 let scene, camera, renderer, controls, map, citiesData = [];
 let targetCityMarker = null;
+let impactData = null;
 
 function MapMadness() {
   scene = new THREE.Scene();
@@ -223,6 +224,23 @@ function dropMeteor(lat, lon) {
           scene.remove(tail);
           meteorExplosion(lat, lon);
           fireAndSmoke(lat, lon);
+          
+          // Show impact analysis panel after impact
+          const params = getUrlParams();
+          if (params.asteroidName) {
+            const asteroidData = {
+              name: params.asteroidName,
+              diameter: parseFloat(params.asteroidDiameter) || 0.5,
+              velocity: (parseFloat(params.asteroidVelocity) || 25) * 1000 // Convert km/s to m/s
+            };
+            const cityData = {
+              name: params.city,
+              lat: parseFloat(params.lat),
+              lng: parseFloat(params.lng),
+              country: params.country
+            };
+            showImpactPanel(asteroidData, cityData);
+          }
         }
       });
     },
@@ -282,7 +300,10 @@ function getUrlParams() {
     city: urlParams.get('city'),
     lat: urlParams.get('lat'),
     lng: urlParams.get('lng'),
-    country: urlParams.get('country')
+    country: urlParams.get('country'),
+    asteroidName: urlParams.get('asteroidName'),
+    asteroidDiameter: urlParams.get('asteroidDiameter'),
+    asteroidVelocity: urlParams.get('asteroidVelocity')
   };
 }
 
@@ -336,5 +357,251 @@ function setupBackToEarthButton() {
   }
 }
 
+// Impact Analysis API Functions
+async function calculateImpact(impactData) {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/impact', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(impactData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error calculating impact:', error);
+    throw error;
+  }
+}
+
+function formatImpactAnalysis(impactResult) {
+  if (!impactResult) return null;
+
+  const { results, volcanic_impact, location, geojson } = impactResult;
+
+  // Determine impact severity based on energy and crater size
+  const energyJoules = results.energy_joules;
+  const craterDiameterKm = results.crater_diameter_km;
+  const blastRadiusKm = results.blast_radius_km;
+  const earthquakeMagnitude = results.earthquake_magnitude;
+
+  let severity = 'Low';
+  let severityColor = '#00ff88';
+  let description = 'Minor local impact';
+
+  if (energyJoules > 1e20) {
+    severity = 'Extreme';
+    severityColor = '#ff0000';
+    description = 'Global catastrophic event';
+  } else if (energyJoules > 1e19) {
+    severity = 'High';
+    severityColor = '#ff8800';
+    description = 'Regional devastation';
+  } else if (energyJoules > 1e18) {
+    severity = 'Moderate';
+    severityColor = '#ffaa00';
+    description = 'Significant local damage';
+  }
+
+  // Format energy in more readable units
+  const energyTNT = energyJoules / (4.184e9); // Convert to TNT equivalent
+  let energyDisplay = '';
+  if (energyTNT >= 1e6) {
+    energyDisplay = `${(energyTNT / 1e6).toFixed(1)} Megatons TNT`;
+  } else if (energyTNT >= 1e3) {
+    energyDisplay = `${(energyTNT / 1e3).toFixed(1)} Kilotons TNT`;
+  } else {
+    energyDisplay = `${energyTNT.toFixed(1)} Tons TNT`;
+  }
+
+  return {
+    severity: {
+      level: severity,
+      color: severityColor,
+      description: description
+    },
+    energy: {
+      joules: energyJoules,
+      tntEquivalent: energyTNT,
+      display: energyDisplay
+    },
+    crater: {
+      diameterKm: craterDiameterKm,
+      diameterM: results.crater_diameter_m
+    },
+    blast: {
+      radiusKm: blastRadiusKm
+    },
+    earthquake: {
+      magnitude: earthquakeMagnitude
+    },
+    volcanic: {
+      isAffected: volcanic_impact.is_affected,
+      volcanoName: volcanic_impact.volcano_name,
+      impactLevel: volcanic_impact.impact_level
+    },
+    location: {
+      isWater: location.is_water,
+      elevation: location.elevation_m,
+      waterSource: location.is_water_source
+    },
+    geojson: geojson,
+    summary: {
+      craterSize: craterDiameterKm > 1 ? `${craterDiameterKm.toFixed(1)} km crater` : `${results.crater_diameter_m.toFixed(0)} m crater`,
+      blastZone: `${blastRadiusKm.toFixed(0)} km blast radius`,
+      earthquake: `Magnitude ${earthquakeMagnitude.toFixed(1)} earthquake`,
+      volcanic: volcanic_impact.is_affected ? `Volcanic activity triggered at ${volcanic_impact.volcano_name}` : 'No volcanic activity triggered'
+    }
+  };
+}
+
+function showImpactPanel(asteroidData, cityData) {
+  const panel = document.getElementById('impactPanel');
+  const subtitle = document.getElementById('impactSubtitle');
+  const content = document.getElementById('impactContent');
+  
+  // Update subtitle
+  subtitle.textContent = `${asteroidData.name || 'Asteroid'} → ${cityData.name}`;
+  
+  // Show panel
+  panel.classList.add('visible');
+  
+  // Calculate impact analysis
+  calculateImpactAnalysis(asteroidData, cityData);
+}
+
+async function calculateImpactAnalysis(asteroidData, cityData) {
+  const content = document.getElementById('impactContent');
+  
+  try {
+    const impactRequestData = {
+      diameter_m: (asteroidData.diameter || 0.5) * 1000, // Convert km to m
+      velocity_kms: (asteroidData.velocity || 25000) / 1000, // Convert m/s to km/s
+      lat: cityData.lat,
+      lon: cityData.lng,
+      delta_km: 1000 // Default search radius
+    };
+
+    const result = await calculateImpact(impactRequestData);
+    const formattedAnalysis = formatImpactAnalysis(result);
+    
+    // Store impact data for visualization
+    impactData = formattedAnalysis;
+    
+    // Display the analysis
+    displayImpactAnalysis(formattedAnalysis, cityData);
+    
+  } catch (error) {
+    console.error('Failed to calculate impact:', error);
+    content.innerHTML = `
+      <div class="error-message">
+        Failed to calculate impact analysis. Please try again.
+      </div>
+    `;
+  }
+}
+
+function displayImpactAnalysis(analysis, cityData) {
+  const content = document.getElementById('impactContent');
+  
+  content.innerHTML = `
+    <div class="severity-badge" style="background: ${analysis.severity.color}">
+      ${analysis.severity.level} Impact
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Energy Release</div>
+        <div class="stat-value" style="color: #00e5ff">${analysis.energy.display}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Crater Diameter</div>
+        <div class="stat-value" style="color: #ff4757">${analysis.summary.craterSize}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Blast Radius</div>
+        <div class="stat-value" style="color: #ff8800">${analysis.summary.blastZone}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Earthquake</div>
+        <div class="stat-value" style="color: #ffaa00">M${analysis.earthquake.magnitude.toFixed(1)}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Impact Zones</div>
+      <div class="impact-zone">
+        <div class="zone-title">Primary Impact Zone</div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="label">Crater Diameter:</span>
+            <span class="value">${analysis.crater.diameterKm.toFixed(1)} km</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Blast Radius:</span>
+            <span class="value">${analysis.blast.radiusKm.toFixed(0)} km</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Earthquake Mag:</span>
+            <span class="value">${analysis.earthquake.magnitude.toFixed(1)}</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Energy:</span>
+            <span class="value">${analysis.energy.display}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Volcanic Activity</div>
+      <div class="volcanic-info ${analysis.volcanic.isAffected ? 'affected' : ''}">
+        <div class="volcanic-title">
+          ${analysis.volcanic.isAffected ? 'Volcanic Trigger' : 'No Volcanic Activity'}
+        </div>
+        <div class="volcanic-details">
+          ${analysis.volcanic.isAffected 
+            ? `Volcanic activity triggered at ${analysis.volcanic.volcanoName}`
+            : 'Impact will not trigger volcanic activity'
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Impact Location</div>
+      <div class="location-info">
+        <div class="location-title">Target Details</div>
+        <div class="location-details">
+          <div>Location: ${cityData.name}, ${cityData.country}</div>
+          <div>Coordinates: ${cityData.lat.toFixed(4)}°, ${cityData.lng.toFixed(4)}°</div>
+          <div>Surface: ${analysis.location.isWater ? 'Water' : 'Land'}</div>
+          ${analysis.location.elevation ? `<div>Elevation: ${analysis.location.elevation} m</div>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+
+// Setup impact panel close button
+function setupImpactPanel() {
+  const closeButton = document.getElementById('closeImpactPanel');
+  const panel = document.getElementById('impactPanel');
+  
+  if (closeButton) {
+    closeButton.addEventListener('click', () => {
+      panel.classList.remove('visible');
+    });
+  }
+}
+
 // Initialize the back to Earth button
 setupBackToEarthButton();
+setupImpactPanel();

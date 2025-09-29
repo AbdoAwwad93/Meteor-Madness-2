@@ -285,7 +285,8 @@ function App() {
     const startTime = Date.now()
     const animate = () => {
       const elapsed = Date.now() - startTime
-      const progress = Math.min((elapsed / 1000) * velocity * 0.000001, 1)
+      // Increased speed multiplier for faster movement
+      const progress = Math.min((elapsed / 1000) * velocity * 0.000002, 1)
 
       setMovementProgress(progress)
 
@@ -301,7 +302,7 @@ function App() {
         setMovementAnimationId(null)
         console.log("[v0] Asteroid movement completed - Impact!")
         
-        // Navigate to map page when asteroid reaches Earth
+        // Navigate to map page when asteroid reaches Earth with reduced delay
         setTimeout(() => {
           // Pass city data via URL parameters
           const cityData = asteroid.targetCity
@@ -316,7 +317,7 @@ function App() {
           } else {
             window.location.href = '/map_page.html'
           }
-        }, 1000) // Small delay to show the impact
+        }, 500) // Reduced delay from 1000ms to 500ms
       }
     }
 

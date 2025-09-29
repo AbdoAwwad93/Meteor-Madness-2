@@ -115,9 +115,112 @@
             border-radius: 10px;
             display: inline-block;
         }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 50%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 212, 255, 0.3);
+            border-top: 3px solid #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: #00d4ff;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Back to Earth Button */
+        .back-to-earth-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(15px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .back-to-earth-btn:hover {
+            background: rgba(0, 102, 204, 0.2);
+            border-color: #0066cc;
+            color: #0066cc;
+            transform: translateY(-1px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .back-to-earth-btn:active {
+            transform: translateY(0);
+        }
+
+        .back-to-earth-btn .icon {
+            font-size: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .back-to-earth-btn:hover .icon {
+            transform: translateX(-2px);
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading Impact Analysis</div>
+        <div class="loading-subtext">Preparing 3D visualization...</div>
+    </div>
+
     <!-- Search Box -->
     <input
         type="text"
@@ -137,6 +240,12 @@
     
     <!-- Main Map Container -->
     <div id="map"></div>
+
+    <!-- Back to Earth Button -->
+    <button class="back-to-earth-btn" id="backToEarthBtn">
+        <span class="icon">←</span>
+        Back to Earth
+    </button>
 
     <!-- Scripts in correct order -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>

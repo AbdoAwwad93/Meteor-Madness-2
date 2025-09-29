@@ -181,9 +181,11 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
     }
 
     if (isMoving && movementProgress !== undefined) {
-      // Smooth interpolation towards target position
-      const lerpFactor = Math.min(delta * 8, 1) // Adjust speed of interpolation
-      animatedPosition.current.lerp(targetPositionRef.current, lerpFactor)
+      // Smoother interpolation towards target position with improved easing
+      const lerpFactor = Math.min(delta * 12, 1) // Increased speed for faster movement
+      // Use smoothstep for more natural movement
+      const smoothLerpFactor = lerpFactor * lerpFactor * (3 - 2 * lerpFactor)
+      animatedPosition.current.lerp(targetPositionRef.current, smoothLerpFactor)
       position.current.copy(animatedPosition.current)
     }
   })

@@ -35,6 +35,17 @@ function MapMadness() {
     const material = new THREE.MeshBasicMaterial({ map: texture });
     map = new THREE.Mesh(geometry, material);
     scene.add(map);
+    
+    // Hide loading screen once map is loaded
+    setTimeout(() => {
+      const loadingScreen = document.getElementById('loadingScreen');
+      if (loadingScreen) {
+        loadingScreen.classList.add('hidden');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 500);
+      }
+    }, 500); // Small delay to ensure smooth transition
   });
 
   window.addEventListener("resize", () => {
@@ -84,11 +95,11 @@ function zoomToCity(lat, lon) {
   const { x, y } = latLonToXY(lat, lon, 400, 200);
 
   gsap.to(camera.position, {
-    duration: 2,
+    duration: 1.2, // Reduced from 2 seconds to 1.2 seconds
     x: x,
     y: -y,
     z: 500,
-    ease: "power2.inOut"
+    ease: "power3.inOut" // Improved easing for smoother transition
   });
 }
 
@@ -196,17 +207,17 @@ function dropMeteor(lat, lon) {
       meteor.position.y += offsetY;
 
       gsap.to(meteor.position, {
-        duration: 1.8,
+        duration: 1.2, // Reduced from 1.8 seconds to 1.2 seconds
         x: x + offsetX,
         y: -y + offsetY,
-        ease: "power2.in"
+        ease: "power3.in" // Improved easing
       });
 
       gsap.to(tail.position, {
-        duration: 1.8,
+        duration: 1.2, // Reduced from 1.8 seconds to 1.2 seconds
         x: x,
         y: -y,
-        ease: "power2.in",
+        ease: "power3.in", // Improved easing
         onComplete: () => {
           scene.remove(meteor);
           scene.remove(tail);
@@ -295,7 +306,7 @@ function autoStartAsteroidAnimation() {
     // Start the asteroid animation after a short delay
     setTimeout(() => {
       dropMeteor(lat, lng);
-    }, 2000); // 2 second delay to allow camera to zoom
+    }, 1200); // Reduced delay from 2000ms to 1200ms to match zoom duration
   }
 }
 
@@ -304,3 +315,26 @@ animate();
 
 // Auto-start asteroid animation if city data is provided
 autoStartAsteroidAnimation();
+
+// Back to Earth functionality
+function setupBackToEarthButton() {
+  const backToEarthBtn = document.getElementById('backToEarthBtn');
+  
+  if (backToEarthBtn) {
+    backToEarthBtn.addEventListener('click', () => {
+      // Add a smooth transition effect before navigating
+      backToEarthBtn.style.transform = 'scale(0.95)';
+      backToEarthBtn.style.opacity = '0.7';
+      
+      // Navigate back to the main Earth visualization
+      setTimeout(() => {
+        // Check if we're in a subdirectory or root
+        const basePath = window.location.pathname.includes('/public/') ? '../' : './';
+        window.location.href = basePath + 'index.html';
+      }, 150); // Short delay for visual feedback
+    });
+  }
+}
+
+// Initialize the back to Earth button
+setupBackToEarthButton();

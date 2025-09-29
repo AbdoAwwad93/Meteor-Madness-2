@@ -140,25 +140,27 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
         const distance = isFocusedMode ? 0.5 : 8 // Much closer to asteroid
         const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance))
 
-        // Animate camera to new position
+        // Animate camera to new position with faster, smoother transition
         const startPosition = camera.position.clone()
         const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
-        const duration = 3000
+        const duration = 1500 // Reduced from 3000ms to 1500ms
         const startTime = Date.now()
 
         const animateCamera = () => {
           const elapsed = Date.now() - startTime
           const progress = Math.min(elapsed / duration, 1)
 
-          // Smooth easing function
-          const easeInOut = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2
+          // Improved easing function for smoother, faster transition
+          const easeInOutCubic = progress < 0.5 
+            ? 4 * progress * progress * progress 
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2
 
           // Interpolate camera position
-          camera.position.lerpVectors(startPosition, cameraPosition, easeInOut)
+          camera.position.lerpVectors(startPosition, cameraPosition, easeInOutCubic)
 
           // Interpolate target (look at asteroid) - only if controls exist
           if (controlsRef.current) {
-            controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOut)
+            controlsRef.current.target.lerpVectors(startTarget, asteroidPosition, easeInOutCubic)
             controlsRef.current.update()
           }
 
@@ -182,22 +184,24 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
       const targetPosition = new THREE.Vector3(0, 0, 20)
       const targetTarget = new THREE.Vector3(0, 0, 0)
-      const duration = 2000 // 2 seconds
+      const duration = 1200 // Reduced from 2000ms to 1200ms
       const startTime = Date.now()
 
       const animateCamera = () => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / duration, 1)
 
-        // Smooth easing function
-        const easeInOut = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2
+        // Improved easing function for smoother, faster transition
+        const easeInOutCubic = progress < 0.5 
+          ? 4 * progress * progress * progress 
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2
 
         // Interpolate camera position
-        camera.position.lerpVectors(startPosition, targetPosition, easeInOut)
+        camera.position.lerpVectors(startPosition, targetPosition, easeInOutCubic)
 
         // Interpolate target (look at Earth) - only if controls exist
         if (controlsRef.current) {
-          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOut)
+          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOutCubic)
           controlsRef.current.update()
         }
 
@@ -485,6 +489,9 @@ export default function EarthVisualization({
       milkyWay: [`${basePath}/8k_stars_milky_way.jpg`],
     }
 
+    // Preload textures for faster transitions
+    const textureCache = new Map()
+
     function setCommonTextureProps(texture) {
       if (!texture) return
       // sRGB for color-correct rendering
@@ -499,8 +506,14 @@ export default function EarthVisualization({
       texture.wrapT = THREE.ClampToEdgeWrapping
     }
 
-    function loadFirstAvailable(urlList) {
+    function loadFirstAvailable(urlList, cacheKey) {
       return new Promise((resolve) => {
+        // Check cache first
+        if (textureCache.has(cacheKey)) {
+          resolve(textureCache.get(cacheKey))
+          return
+        }
+
         const tryNext = (idx) => {
           if (idx >= urlList.length) {
             resolve(null)
@@ -511,6 +524,8 @@ export default function EarthVisualization({
             url,
             (tex) => {
               setCommonTextureProps(tex)
+              // Cache the texture for future use
+              textureCache.set(cacheKey, tex)
               resolve(tex)
             },
             undefined,
@@ -567,10 +582,10 @@ export default function EarthVisualization({
     setLoadedTextures({ dayMap: immediateProcedural })
     ;(async () => {
       const [dayMap, nightMap, cloudsMap, milkyWay] = await Promise.all([
-        loadFirstAvailable(candidates.dayMap),
-        loadFirstAvailable(candidates.nightMap),
-        loadFirstAvailable(candidates.cloudsMap),
-        loadFirstAvailable(candidates.milkyWay),
+        loadFirstAvailable(candidates.dayMap, 'dayMap'),
+        loadFirstAvailable(candidates.nightMap, 'nightMap'),
+        loadFirstAvailable(candidates.cloudsMap, 'cloudsMap'),
+        loadFirstAvailable(candidates.milkyWay, 'milkyWay'),
       ])
 
       const finalDayMap = dayMap || immediateProcedural || createProceduralDayTexture()

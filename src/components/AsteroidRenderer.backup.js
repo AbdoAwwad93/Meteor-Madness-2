@@ -279,6 +279,3 @@ export default function AsteroidRenderer({ asteroids, selectedAsteroid, onAstero
     </group>
   );
 }
-
-// Preload the GLB model for better performance
-useGLTF.preload('/Itokawa_1_1.glb');

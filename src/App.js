@@ -316,9 +316,9 @@ function App() {
               asteroidDiameter: (asteroid.diameter || 0.5).toString(),
               asteroidVelocity: ((asteroid.velocity || 25000) / 1000).toString()
             })
-            window.location.href = `/map_page.html?${params.toString()}`
+            window.location.href = `/Map/map_page.html?${params.toString()}`
           } else {
-            window.location.href = '/map_page.html'
+            window.location.href = '/Map/map_page.html'
           }
         }, 500) // Reduced delay from 1000ms to 500ms
       }

@@ -39,7 +39,7 @@ function AsteroidModel({ position, rotation, isSelected, onClick }) {
   const [modelLoaded, setModelLoaded] = useState(false)
 
   // Always call useGLTF hook (React hooks must be called unconditionally)
-  const gltf = useGLTF("/Itokawa_1_1.glb")
+  const gltf = useGLTF("/3D_models/Itokawa_1_1.glb")
 
   // Clone the scene to allow multiple instances
   const clonedScene = useMemo(() => {
@@ -356,4 +356,4 @@ export default function AsteroidRenderer({
 }
 
 // Preload the GLB model for better performance
-useGLTF.preload("/Itokawa_1_1.glb")
+useGLTF.preload("/3D_models/Itokawa_1_1.glb")

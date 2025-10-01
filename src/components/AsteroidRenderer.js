@@ -7,7 +7,7 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader"
 import * as THREE from "three"
 import { latLngTo3D } from "../data/cities"
 
-function AsteroidLabel({ position, name, isSelected, onClick }) {
+function AsteroidLabel({ position, name, isSelected, onClick, isHovered }) {
   const textRef = useRef()
   
   useFrame(({ camera }) => {
@@ -24,19 +24,29 @@ function AsteroidLabel({ position, name, isSelected, onClick }) {
     }
   }
 
+  const handlePointerOver = (event) => {
+    event.stopPropagation()
+  }
+
+  const handlePointerOut = (event) => {
+    event.stopPropagation()
+  }
+
   return (
     <Text
       ref={textRef}
       position={[position.x + 0.15, position.y + 0.15, position.z]}
-      fontSize={0.12}
-      color="#ffffff"
+      fontSize={isHovered ? 0.15 : 0.12} // Larger when hovered
+      color={isHovered ? "#00e5ff" : "#ffffff"} // Cyan when hovered
       anchorX="left"
       anchorY="middle"
       material-transparent
-      material-opacity={isSelected ? 1.0 : 0.7}
-      outlineWidth={0.02}
+      material-opacity={isSelected ? 1.0 : (isHovered ? 1.0 : 0.7)} // Full opacity when hovered
+      outlineWidth={isHovered ? 0.03 : 0.02} // Thicker outline when hovered
       outlineColor="#000000"
       onClick={handleClick}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
       style={{ cursor: 'pointer' }}
     >
       {name}
@@ -44,7 +54,7 @@ function AsteroidLabel({ position, name, isSelected, onClick }) {
   )
 }
 
-function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) {
+function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, asteroidId }) {
   const modelRef = useRef()
   const [modelLoaded, setModelLoaded] = useState(false)
 
@@ -68,16 +78,55 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
     "/textures/Asteroids/photo-stone-texture-pattern.jpg",
     "/textures/Asteroids/stone-texture.jpg"
   ])
+  
+  // Also try loading the stone texture directly as a fallback
+  const stoneTexture = useTexture("/textures/Asteroids/photo-stone-texture-pattern.jpg")
+  
+  // Debug texture loading
+  console.log("Textures loaded:", textures)
+  if (textures && textures.length > 0) {
+    textures.forEach((texture, index) => {
+      console.log(`Texture ${index}:`, {
+        loaded: texture?.image ? "YES" : "NO",
+        src: texture?.image?.src,
+        width: texture?.image?.width,
+        height: texture?.image?.height
+      })
+    })
+  }
 
   // Select texture deterministically based on asteroid ID
   const selectedTexture = useMemo(() => {
-    if (!textures || textures.length === 0) return null
+    // Try to use the direct stone texture first
+    if (stoneTexture) {
+      console.log(`Using direct stone texture for asteroid ${asteroidId}:`, {
+        texture: stoneTexture,
+        hasImage: !!stoneTexture?.image,
+        imageSrc: stoneTexture?.image?.src,
+        imageLoaded: stoneTexture?.image?.complete
+      })
+      return stoneTexture
+    }
+    
+    if (!textures || textures.length === 0) {
+      console.log("No textures available for asteroid:", asteroidId)
+      return null
+    }
     
     // Create deterministic selection based on asteroid ID
     const seed = asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000
     const textureIndex = Math.abs(seed) % textures.length
-    return textures[textureIndex]
-  }, [textures, asteroidId])
+    const selected = textures[textureIndex]
+    
+    console.log(`Selected texture ${textureIndex} for asteroid ${asteroidId}:`, {
+      texture: selected,
+      hasImage: !!selected?.image,
+      imageSrc: selected?.image?.src,
+      imageLoaded: selected?.image?.complete
+    })
+    
+    return selected
+  }, [textures, stoneTexture, asteroidId])
 
   // Clone the scene and apply textures to allow multiple instances
   const clonedScene = useMemo(() => {
@@ -120,44 +169,124 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
 
           // Only apply textures to non-Itokawa models
           if (selectedModel.path !== "/3D_models/Itokawa_1_1.glb") {
-            // Clone texture to avoid affecting other instances
-            const texture = selectedTexture.clone()
+            console.log("Applying texture to mesh:", child.name || "unnamed", "selectedTexture:", selectedTexture)
+            
+            if (!selectedTexture) {
+              console.warn("No texture available for mesh:", child.name || "unnamed")
+              return
+            }
+            
+            // Use texture directly (cloning might be causing issues)
+            const texture = selectedTexture
+            console.log("Using texture directly:", {
+              texture: texture,
+              hasImage: !!texture?.image,
+              imageSrc: texture?.image?.src,
+              imageComplete: texture?.image?.complete
+            })
+            
+            // Configure texture properties
             texture.wrapS = THREE.RepeatWrapping
             texture.wrapT = THREE.RepeatWrapping
-            texture.repeat.set(1, 1) // Single repeat for 3D models
+            texture.repeat.set(1, 1) // Use original texture size for OBJ models
+            texture.flipY = false // OBJ models often need this
+            texture.anisotropy = 4 // Improve texture quality
+            texture.minFilter = THREE.LinearFilter
+            texture.magFilter = THREE.LinearFilter
 
-            // Apply the texture
-            child.material.map = texture
-            child.material.needsUpdate = true
-            
-            // Debug log for OBJ models
+            // For OBJ models, create a new material with proper settings
             if (selectedModel.type === "obj") {
+              console.log("Creating material with texture for OBJ model:", {
+                meshName: child.name || "unnamed",
+                texture: texture,
+                textureImage: texture?.image,
+                textureSrc: texture?.image?.src
+              })
+              
+              child.material = new THREE.MeshPhongMaterial({
+                map: texture,
+                shininess: 30,
+                color: new THREE.Color(0xffffff), // White base color to let texture show through
+                transparent: false,
+                side: THREE.DoubleSide, // Ensure both sides are rendered
+                wireframe: false // Make sure wireframe is off
+              })
+              
+              // Ensure the material updates properly
+              child.material.needsUpdate = true
+              
+              // Make sure the mesh is visible
+              child.visible = true
+              
+              // Ensure geometry has UV coordinates for texture mapping
+              if (child.geometry && !child.geometry.attributes.uv) {
+                console.warn("OBJ model mesh missing UV coordinates, generating basic UVs:", child.name || "unnamed")
+                child.geometry.computeBoundingBox()
+                const bbox = child.geometry.boundingBox
+                const size = new THREE.Vector3()
+                bbox.getSize(size)
+                
+                // Generate basic UV coordinates
+                const uvAttribute = child.geometry.getAttribute('position')
+                const uvArray = new Float32Array(uvAttribute.count * 2)
+                
+                for (let i = 0; i < uvAttribute.count; i++) {
+                  const x = uvAttribute.getX(i)
+                  const y = uvAttribute.getY(i)
+                  const z = uvAttribute.getZ(i)
+                  
+                  // Simple cylindrical UV mapping
+                  uvArray[i * 2] = (x + size.x / 2) / size.x
+                  uvArray[i * 2 + 1] = (z + size.z / 2) / size.z
+                }
+                
+                child.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2))
+              }
+              
               console.log("Applied texture to OBJ model mesh:", child.name || "unnamed", "texture:", texture.image?.src)
-            }
+              console.log("Final material settings:", {
+                hasTexture: !!child.material.map,
+                textureImage: child.material.map?.image?.src,
+                textureWidth: child.material.map?.image?.width,
+                textureHeight: child.material.map?.image?.height,
+                color: child.material.color.getHexString(),
+                shininess: child.material.shininess,
+                wireframe: child.material.wireframe,
+                side: child.material.side,
+                hasUVs: !!child.geometry?.attributes?.uv,
+                uvCount: child.geometry?.attributes?.uv?.count
+              })
+            } else {
+              // For other GLB models, apply texture normally
+              child.material.map = texture
+              child.material.needsUpdate = true
+              
+              // Make asteroids consistently colored with texture
+              if (child.material.color) {
+                child.material.color.multiplyScalar(1.5) // Slight brightness boost
+              }
 
-            // Make asteroids consistently colored with texture
-            if (child.material.color) {
-              child.material.color.multiplyScalar(1.5) // Slight brightness boost
+              // Add some color variation based on asteroid ID
+              const colorVariation = new THREE.Color().setHSL(
+                (asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000) % 360 / 360,
+                0.2, // Low saturation
+                1.0  // Full lightness to let texture show through
+              )
+              child.material.color.multiply(colorVariation)
             }
-
-            // Add some color variation based on asteroid ID
-            const colorVariation = new THREE.Color().setHSL(
-              (asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000) % 360 / 360,
-              0.2, // Low saturation
-              1.0  // Full lightness to let texture show through
-            )
-            child.material.color.multiply(colorVariation)
           } else {
             // For Itokawa model, use original material without texture
             console.log("Using original Itokawa material without texture for mesh:", child.name || "unnamed")
           }
 
-          // Add subtle emissive glow for all asteroids
-          child.material.emissive = new THREE.Color(0x332211)
-          child.material.emissiveIntensity = 0.1
+          // Add subtle emissive glow for all asteroids (only if not already set for OBJ)
+          if (selectedModel.type !== "obj") {
+            child.material.emissive = new THREE.Color(0x332211)
+            child.material.emissiveIntensity = 0.1
+          }
 
-          // Consistent shininess for all asteroids
-          if (child.material.shininess !== undefined) {
+          // Consistent shininess for all asteroids (only if not already set for OBJ)
+          if (selectedModel.type !== "obj" && child.material.shininess !== undefined) {
             child.material.shininess = 100
           }
         }
@@ -198,6 +327,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
   const originalPosition = useRef(new THREE.Vector3())
   const animatedPosition = useRef(new THREE.Vector3())
   const targetPositionRef = useRef(new THREE.Vector3())
+  const [isHovered, setIsHovered] = useState(false)
 
   useMemo(() => {
     if (asteroid.hasRealOrbitalData && asteroid.realPosition) {
@@ -282,12 +412,25 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
     }
   })
 
+  const handlePointerOver = () => {
+    setIsHovered(true)
+  }
+
+  const handlePointerOut = () => {
+    setIsHovered(false)
+  }
+
   return (
-    <group ref={groupRef}>
+    <group 
+      ref={groupRef}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+    >
       <AsteroidModel
         position={position.current}
         rotation={rotation.current}
         isSelected={isSelected}
+        isHovered={isHovered}
         onClick={() => onSelect && onSelect(asteroid)}
         asteroidId={asteroid.id}
       />
@@ -295,6 +438,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
         position={position.current}
         name={asteroid.name}
         isSelected={isSelected}
+        isHovered={isHovered}
         onClick={() => onSelect && onSelect(asteroid)}
       />
     </group>

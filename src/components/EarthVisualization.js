@@ -135,15 +135,18 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
           }
         }
 
-        // Calculate camera position - much closer for better asteroid viewing
+        // Calculate camera position - behind the asteroid with Earth visible
         const direction = asteroidPosition.clone().normalize()
         const distance = isFocusedMode ? 0.2 : 1.5 // Very close to asteroid for detailed view
-        const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(-distance))
+        
+        // Position camera behind the asteroid (opposite side from Earth)
+        // This makes Earth visible in the background
+        const cameraPosition = asteroidPosition.clone().add(direction.multiplyScalar(distance))
 
         // Animate camera to new position with faster, smoother transition
         const startPosition = camera.position.clone()
         const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
-        const duration = 1000 // Faster transition for better responsiveness
+        const duration = 3500 // Faster transition for better responsiveness
         const startTime = Date.now()
 
         const animateCamera = () => {
@@ -184,7 +187,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
       const targetPosition = new THREE.Vector3(0, 0, 20)
       const targetTarget = new THREE.Vector3(0, 0, 0)
-      const duration = 1200 // Reduced from 2000ms to 1200ms
+      const duration = 3000 // Faster return to main view
       const startTime = Date.now()
 
       const animateCamera = () => {
@@ -225,7 +228,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       zoomSpeed={1}
       panSpeed={1}
       rotateSpeed={0.5}
-      minDistance={0.1} // Allow very close zoom for detailed asteroid viewing
+      minDistance={0.18} // Allow very close zoom for detailed asteroid viewing
       maxDistance={500}
       enabled={!isTransitioning} // Disable controls during transition
     />

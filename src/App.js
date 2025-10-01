@@ -256,10 +256,12 @@ function App() {
   const [movementControlsOpen, setMovementControlsOpen] = useState(false)
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
   const [showImpactWarning, setShowImpactWarning] = useState(false)
+  const [showInfoPanel, setShowInfoPanel] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
     setIsFocusedMode(true)
+    setShowInfoPanel(true)
     // Only reset camera reached state if selecting a different asteroid
     if (selectedSatellite && selectedSatellite.id !== asteroid.id) {
       setCameraReachedAsteroid(false)
@@ -270,6 +272,11 @@ function App() {
     setIsFocusedMode(false)
     setSelectedSatellite(null)
     setCameraReachedAsteroid(false)
+    setShowInfoPanel(false)
+  }
+
+  const handleCloseInfoPanel = () => {
+    setShowInfoPanel(false)
   }
 
   const handleStartMovement = (asteroid, velocity) => {
@@ -377,7 +384,7 @@ function App() {
               onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
             />
             <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
-            {selectedSatellite && cameraReachedAsteroid && <InfoPanel asteroid={selectedSatellite} onClose={() => setSelectedSatellite(null)} />}
+            {selectedSatellite && cameraReachedAsteroid && showInfoPanel && <InfoPanel asteroid={selectedSatellite} onClose={handleCloseInfoPanel} />}
             {isFocusedMode && (
               <BackToEarthButton onClick={handleBackToEarth}>
                 <span className="icon">←</span>

@@ -7,7 +7,7 @@ import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader"
 import * as THREE from "three"
 import { latLngTo3D } from "../data/cities"
 
-function AsteroidLabel({ position, name, isSelected }) {
+function AsteroidLabel({ position, name, isSelected, onClick }) {
   const textRef = useRef()
   
   useFrame(({ camera }) => {
@@ -16,6 +16,13 @@ function AsteroidLabel({ position, name, isSelected }) {
       textRef.current.lookAt(camera.position)
     }
   })
+
+  const handleClick = (event) => {
+    event.stopPropagation() // Prevent event bubbling to the asteroid
+    if (onClick) {
+      onClick()
+    }
+  }
 
   return (
     <Text
@@ -29,6 +36,8 @@ function AsteroidLabel({ position, name, isSelected }) {
       material-opacity={isSelected ? 1.0 : 0.7}
       outlineWidth={0.02}
       outlineColor="#000000"
+      onClick={handleClick}
+      style={{ cursor: 'pointer' }}
     >
       {name}
     </Text>
@@ -43,7 +52,6 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
   const selectedModel = useMemo(() => {
     const models = [
       { path: "/3D_models/Itokawa_1_1.glb", type: "glb" },
-      { path: "/3D_models/Asteroid_2d.glb", type: "glb" },
       { path: "/3D_models/Apophis Model 1.obj", type: "obj" }
     ]
     const seed = asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000
@@ -51,9 +59,8 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
     return models[modelIndex]
   }, [asteroidId])
 
-  // Load all 3D asteroid models (hooks must be called unconditionally)
+  // Load the 3D asteroid models (hooks must be called unconditionally)
   const gltf1 = useGLTF("/3D_models/Itokawa_1_1.glb")
-  const gltf2 = useGLTF("/3D_models/Asteroid_2d.glb")
   const objModel = useLoader(OBJLoader, "/3D_models/Apophis Model 1.obj")
   
   // Load all available asteroid textures
@@ -79,8 +86,7 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
     // Get the appropriate model based on selection
     if (selectedModel.path === "/3D_models/Itokawa_1_1.glb" && gltf1?.scene) {
       sourceModel = gltf1.scene
-    } else if (selectedModel.path === "/3D_models/Asteroid_2d.glb" && gltf2?.scene) {
-      sourceModel = gltf2.scene
+      console.log("Using Itokawa GLB model for asteroid:", asteroidId)
     } else if (selectedModel.path === "/3D_models/Apophis Model 1.obj" && objModel) {
       sourceModel = objModel
       console.log("Using Apophis OBJ model for asteroid:", asteroidId)
@@ -90,11 +96,18 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
       const cloned = sourceModel.clone()
       
       // Scale the model to visible size for asteroids around Earth
-      // OBJ models might need different scaling than GLB models
-      const scaleFactor = selectedModel.type === "obj" ? 0.05 : 0.01
+      // Itokawa GLB model is much larger, so scale it down more
+      let scaleFactor
+      if (selectedModel.path === "/3D_models/Itokawa_1_1.glb") {
+        scaleFactor = 0.0002 // Much smaller for Itokawa model
+      } else if (selectedModel.type === "obj") {
+        scaleFactor = 0.05 // Keep OBJ models at current size
+      } else {
+        scaleFactor = 0.01 // Default for other GLB models
+      }
       cloned.scale.setScalar(scaleFactor)
 
-      // Apply texture to all meshes in the model
+      // Apply texture to all meshes in the model (skip textures for Itokawa model)
       cloned.traverse((child) => {
         if (child.isMesh) {
           // Create material if it doesn't exist (OBJ models might not have materials)
@@ -105,24 +118,38 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
             child.material = child.material.clone()
           }
 
-          // Clone texture to avoid affecting other instances
-          const texture = selectedTexture.clone()
-          texture.wrapS = THREE.RepeatWrapping
-          texture.wrapT = THREE.RepeatWrapping
-          texture.repeat.set(1, 1) // Single repeat for 3D models
+          // Only apply textures to non-Itokawa models
+          if (selectedModel.path !== "/3D_models/Itokawa_1_1.glb") {
+            // Clone texture to avoid affecting other instances
+            const texture = selectedTexture.clone()
+            texture.wrapS = THREE.RepeatWrapping
+            texture.wrapT = THREE.RepeatWrapping
+            texture.repeat.set(1, 1) // Single repeat for 3D models
 
-          // Apply the texture
-          child.material.map = texture
-          child.material.needsUpdate = true
-          
-          // Debug log for OBJ models
-          if (selectedModel.type === "obj") {
-            console.log("Applied texture to OBJ model mesh:", child.name || "unnamed", "texture:", texture.image?.src)
-          }
+            // Apply the texture
+            child.material.map = texture
+            child.material.needsUpdate = true
+            
+            // Debug log for OBJ models
+            if (selectedModel.type === "obj") {
+              console.log("Applied texture to OBJ model mesh:", child.name || "unnamed", "texture:", texture.image?.src)
+            }
 
-          // Make asteroids consistently colored with texture
-          if (child.material.color) {
-            child.material.color.multiplyScalar(1.5) // Slight brightness boost
+            // Make asteroids consistently colored with texture
+            if (child.material.color) {
+              child.material.color.multiplyScalar(1.5) // Slight brightness boost
+            }
+
+            // Add some color variation based on asteroid ID
+            const colorVariation = new THREE.Color().setHSL(
+              (asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000) % 360 / 360,
+              0.2, // Low saturation
+              1.0  // Full lightness to let texture show through
+            )
+            child.material.color.multiply(colorVariation)
+          } else {
+            // For Itokawa model, use original material without texture
+            console.log("Using original Itokawa material without texture for mesh:", child.name || "unnamed")
           }
 
           // Add subtle emissive glow for all asteroids
@@ -133,14 +160,6 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
           if (child.material.shininess !== undefined) {
             child.material.shininess = 100
           }
-
-          // Add some color variation based on asteroid ID
-          const colorVariation = new THREE.Color().setHSL(
-            (asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000) % 360 / 360,
-            0.2, // Low saturation
-            1.0  // Full lightness to let texture show through
-          )
-          child.material.color.multiply(colorVariation)
         }
       })
 
@@ -148,7 +167,7 @@ function AsteroidModel({ position, rotation, isSelected, onClick, asteroidId }) 
       return cloned
     }
     return null
-  }, [gltf1?.scene, gltf2?.scene, objModel, selectedTexture, asteroidId, selectedModel.path])
+  }, [gltf1?.scene, objModel, selectedTexture, asteroidId, selectedModel.path])
 
   useFrame(() => {
     if (modelRef.current) {
@@ -276,6 +295,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
         position={position.current}
         name={asteroid.name}
         isSelected={isSelected}
+        onClick={() => onSelect && onSelect(asteroid)}
       />
     </group>
   )
@@ -383,7 +403,6 @@ export default function AsteroidRenderer({
 }) {
   // Preload models and textures for better performance
   useGLTF.preload("/3D_models/Itokawa_1_1.glb")
-  useGLTF.preload("/3D_models/Asteroid_2d.glb")
   useTexture.preload("/textures/Asteroids/photo-stone-texture-pattern.jpg")
   useTexture.preload("/textures/Asteroids/stone-texture.jpg")
 

@@ -1,4 +1,4 @@
-const IMPACT_API_URL = 'http://127.0.0.1:5000/impact'
+const IMPACT_API_URL = process.env.REACT_APP_IMPACT_API_URL || 'https://nasaproject-production.up.railway.app/impact'
 
 export const calculateImpact = async (impactData) => {
   try {

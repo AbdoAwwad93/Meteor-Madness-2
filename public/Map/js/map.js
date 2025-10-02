@@ -360,7 +360,7 @@ function setupBackToEarthButton() {
 // Impact Analysis API Functions
 async function calculateImpact(impactData) {
   try {
-    const response = await fetch('http://127.0.0.1:5000/impact', {
+    const response = await fetch('https://nasaproject-production.up.railway.app/impact', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

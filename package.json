@@ -22,7 +22,7 @@
     "three": "^0.160.1"
   },
   "overrides": {
-    "three": "^0.160.0"
+    "three": "^0.160.1"
   },
   "scripts": {
     "start": "react-scripts start",

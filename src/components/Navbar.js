@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 
 
 export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen }) {

@@ -217,7 +217,7 @@ const RetryButton = styled.button`
   }
 `
 
-const dataLayers = [
+/* const dataLayers = [
   {
     id: "temperature",
     name: "Surface Temperature",
@@ -243,7 +243,7 @@ const dataLayers = [
     name: "Methane Levels",
     description: "Atmospheric methane concentrations",
   },
-]
+] */
 
 export default function Sidebar({ onSatelliteSelect, isOpen }) {
   const [query, setQuery] = useState("")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useMemo, useState, useEffect } from "react"
+import { useRef, useMemo, useState } from "react"
 import { useFrame, useLoader } from "@react-three/fiber"
 import { useGLTF, useTexture, Text } from "@react-three/drei"
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader"
@@ -56,7 +56,6 @@ function AsteroidLabel({ position, name, isSelected, onClick, isHovered }) {
 
 function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, asteroidId }) {
   const modelRef = useRef()
-  const [modelLoaded, setModelLoaded] = useState(false)
 
   // Select 3D model deterministically based on asteroid ID
   const selectedModel = useMemo(() => {
@@ -232,7 +231,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
                 
                 for (let i = 0; i < uvAttribute.count; i++) {
                   const x = uvAttribute.getX(i)
-                  const y = uvAttribute.getY(i)
                   const z = uvAttribute.getZ(i)
                   
                   // Simple cylindrical UV mapping
@@ -292,11 +290,10 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
         }
       })
 
-      setModelLoaded(true)
       return cloned
     }
     return null
-  }, [gltf1?.scene, objModel, selectedTexture, asteroidId, selectedModel.path])
+  }, [gltf1?.scene, objModel, selectedTexture, asteroidId, selectedModel.path, selectedModel.type])
 
   useFrame(() => {
     if (modelRef.current) {
@@ -386,8 +383,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
     )
   }, [
     asteroid.id,
-    asteroid.orbit,
-    asteroid.orbitProgress,
+    asteroid.name,
     asteroid.hasRealOrbitalData,
     asteroid.realPosition,
     isMoving,
@@ -445,96 +441,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
   )
 }
 
-function OrbitTrail({ orbit, asteroid, isHovered = false, isSelected = false }) {
-  // Use the same deterministic logic as asteroid positioning
-  const orbitData = useMemo(() => {
-    // Create the same deterministic random seed based on asteroid ID
-    const seed = asteroid.id ? asteroid.id.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000
-    const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1
 
-    const a = (asteroid.orbit?.semiMajorAxis || 1.5) * 100 // Use real semi-major axis, convert to scene units
-    const e = orbit.eccentricity || 0.1
-    const i = ((orbit.inclination || 0) * Math.PI) / 180
-
-    const points = []
-    for (let angle = 0; angle < Math.PI * 2; angle += 0.05) {
-      const r = (a * (1 - e * e)) / (1 + e * Math.cos(angle))
-      const x = r * Math.cos(angle)
-      const y = r * Math.sin(angle) * Math.cos(i)
-      const z = r * Math.sin(angle) * Math.sin(i)
-      points.push(new THREE.Vector3(x, y, z))
-    }
-
-    return { points, a, e, i }
-  }, [orbit, asteroid.id])
-
-  const geometry = useMemo(() => {
-    return new THREE.BufferGeometry().setFromPoints(orbitData.points)
-  }, [orbitData.points])
-
-  const lineRef = useRef()
-
-  useEffect(() => {
-    if (lineRef.current) {
-      // compute distances for dashed material
-      lineRef.current.computeLineDistances()
-    }
-  }, [geometry])
-
-  return (
-    <group>
-      <line ref={lineRef} geometry={geometry}>
-        <lineDashedMaterial
-          color={"#00e5ff"}
-          transparent
-          opacity={isSelected ? 0.85 : 0.45}
-          dashSize={0.25}
-          gapSize={0.15}
-          linewidth={1}
-        />
-      </line>
-    </group>
-  )
-}
-
-function InteractiveOrbit({ asteroid, isSelected, onOrbitClick }) {
-  // Use the same deterministic logic as asteroid positioning
-  const orbitData = useMemo(() => {
-    // Create the same deterministic random seed based on asteroid ID
-    const seed = asteroid.id ? asteroid.id.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000
-    const seededRandom = (seed) => (Math.sin(seed) * 10000) % 1
-
-    const a = (asteroid.orbit?.semiMajorAxis || 1.5) * 100 // Use real semi-major axis, convert to scene units
-    const e = asteroid.orbit?.eccentricity || 0.1
-    const i = ((asteroid.orbit?.inclination || 0) * Math.PI) / 180
-
-    const points = []
-    for (let angle = 0; angle < Math.PI * 2; angle += 0.1) {
-      const r = (a * (1 - e * e)) / (1 + e * Math.cos(angle))
-      const x = r * Math.cos(angle)
-      const y = r * Math.sin(angle) * Math.cos(i)
-      const z = r * Math.sin(angle) * Math.sin(i)
-      points.push(new THREE.Vector3(x, y, z))
-    }
-
-    return { points, a, e, i }
-  }, [asteroid])
-
-  const geometry = useMemo(() => {
-    return new THREE.BufferGeometry().setFromPoints(orbitData.points)
-  }, [orbitData.points])
-
-  return (
-    <group>
-      {/* Invisible thick line for easier clicking */}
-      <line geometry={geometry} userData={{ isOrbitLine: true, asteroidId: asteroid.id }}>
-        <lineBasicMaterial color="#ffffff" transparent opacity={0} linewidth={10} />
-      </line>
-      {/* Visible orbit trail */}
-      <OrbitTrail orbit={asteroid.orbit} asteroid={asteroid} isSelected={isSelected} />
-    </group>
-  )
-}
 
 export default function AsteroidRenderer({
   asteroids,

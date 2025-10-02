@@ -120,44 +120,6 @@ const FormGroup = styled.div`
   }
 `
 
-const SuccessButton = styled.button`
-  width: 100%;
-  padding: 12px 16px;
-  background: #00aa44;
-  border: 1px solid #00cc55;
-  border-radius: 6px;
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: inherit;
-
-  &:hover {
-    background: #00cc55;
-    border-color: #00ee66;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 170, 68, 0.4);
-  }
-
-  &:disabled {
-    background: #333;
-    border-color: #555;
-    cursor: not-allowed;
-    opacity: 0.6;
-    transform: none;
-    box-shadow: none;
-  }
-
-  .icon {
-    font-size: 1rem;
-  }
-`
 
 const SecondaryButton = styled.button`
   width: 100%;
@@ -208,50 +170,8 @@ const DangerButton = styled.button`
   }
 `
 
-const StatusDisplay = styled.div`
-  text-align: center;
-  margin-bottom: 16px;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  border-left: 4px solid #00aa44;
-  
-  .title {
-    color: #00aa44;
-    font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  .subtitle {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
-  }
-`
 
 
-const TargetInfo = styled.div`
-  margin-bottom: 12px;
-  padding: 8px;
-  background: rgba(0, 102, 204, 0.1);
-  border: 1px solid rgba(0, 102, 204, 0.3);
-  border-radius: 4px;
-  font-size: 11px;
-  
-  .target-coords {
-    font-weight: 600;
-    color: #0066cc;
-    margin-bottom: 2px;
-  }
-  
-  .target-details {
-    color: rgba(255, 255, 255, 0.7);
-    display: flex;
-    justify-content: space-between;
-  }
-`
 
 const Header = styled.div`
   margin-bottom: 12px;
@@ -368,7 +288,6 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
   const [showControls, setShowControls] = useState(false)
   const [selectedAsteroid, setSelectedAsteroid] = useState("")
   const [velocity, setVelocity] = useState("")
-  const [isSelectionMode, setIsSelectionMode] = useState(false)
   const [citiesData, setCitiesData] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState([])
@@ -445,7 +364,6 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
 
     onStartMovement(asteroidWithTarget, finalVelocity)
     setShowControls(false)
-    setIsSelectionMode(false)
     if (onSelectionModeChange) onSelectionModeChange(false)
   }
 
@@ -454,7 +372,6 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     setShowControls(false)
     setSelectedAsteroid("")
     setVelocity("")
-    setIsSelectionMode(false)
     setSelectedCity(null)
     setSearchQuery("")
     setSearchResults([])
@@ -469,10 +386,8 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     setSearchResults([])
     setShowSearchResults(false)
     if (asteroidId) {
-      setIsSelectionMode(true)
       if (onSelectionModeChange) onSelectionModeChange(true)
     } else {
-      setIsSelectionMode(false)
       if (onSelectionModeChange) onSelectionModeChange(false)
     }
   }

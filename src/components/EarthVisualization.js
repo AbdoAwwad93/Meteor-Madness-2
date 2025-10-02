@@ -2,12 +2,11 @@
 
 import { useRef, useEffect, useState } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { OrbitControls, Text } from "@react-three/drei"
+import { OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
 import { useData } from "../context/DataContext"
 import { useTime } from "../context/TimeContext"
 import AsteroidRenderer from "./AsteroidRenderer"
-import { cities, latLngTo3D } from "../data/cities"
 
 function Earth({ activeDataLayer, textures = {}, onEarthClick, allowSelection = false }) {
   const meshRef = useRef()
@@ -52,7 +51,7 @@ function Earth({ activeDataLayer, textures = {}, onEarthClick, allowSelection = 
 }
 
 function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid }) {
-  const { camera, gl } = useThree()
+  const { camera } = useThree()
   const controlsRef = useRef()
   const [isTransitioning, setIsTransitioning] = useState(false)
 
@@ -114,7 +113,6 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
             // Calculate position in orbital plane
             const xOrb = rScene * Math.cos(trueAnomaly)
             const yOrb = rScene * Math.sin(trueAnomaly)
-            const zOrb = 0
 
             // Apply orbital inclination and orientation
             const i = (orbit.inclination * Math.PI) / 180
@@ -217,7 +215,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
 
       animateCamera()
     }
-  }, [selectedAsteroid, asteroids, camera, isFocusedMode])
+  }, [selectedAsteroid, asteroids, camera, isFocusedMode, onCameraReachedAsteroid])
 
   return (
     <OrbitControls
@@ -269,141 +267,9 @@ function MilkyWayBackground({ milkyWayTexture }) {
   return <mesh ref={meshRef} />
 }
 
-function SimpleStars() {
-  const starsRef = useRef()
-
-  useEffect(() => {
-    const starsGeometry = new THREE.BufferGeometry()
-    const starsMaterial = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 2,
-      sizeAttenuation: false,
-    })
-
-    const starsVertices = []
-    for (let i = 0; i < 1000; i++) {
-      const radius = 50 + Math.random() * 50
-      const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(2 * Math.random() - 1)
-
-      const x = radius * Math.sin(phi) * Math.cos(theta)
-      const y = radius * Math.sin(phi) * Math.sin(theta)
-      const z = radius * Math.cos(phi)
-
-      starsVertices.push(x, y, z)
-    }
-
-    starsGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starsVertices, 3))
-
-    if (starsRef.current) {
-      starsRef.current.geometry = starsGeometry
-      starsRef.current.material = starsMaterial
-    }
-  }, [])
-
-  return <points ref={starsRef} />
-}
 
 
-function TrajectoryLine({ asteroid, targetPosition, progress = 0 }) {
-  if (!asteroid || !targetPosition) return null
 
-  const startPosition = asteroid.realPosition || new THREE.Vector3(0, 0, 0)
-  // Use the point property which is already a Vector3, or create from lat/lng
-  const endPosition = targetPosition.point ? targetPosition.point.clone() : latLngTo3D(targetPosition.lat, targetPosition.lng, 5.1)
-  
-  // Calculate current position along trajectory
-  const currentPosition = startPosition.clone().lerp(endPosition, progress)
-  
-  // Create trajectory points
-  const points = []
-  const numPoints = 50
-  for (let i = 0; i <= numPoints; i++) {
-    const t = i / numPoints
-    const point = startPosition.clone().lerp(endPosition, t)
-    points.push(point)
-  }
-
-  const geometry = new THREE.BufferGeometry().setFromPoints(points)
-  
-  return (
-    <group>
-      {/* Full trajectory line (dashed) */}
-      <line geometry={geometry}>
-        <lineDashedMaterial
-          color="#ff4757"
-          transparent
-          opacity={0.6}
-          dashSize={0.1}
-          gapSize={0.05}
-          linewidth={2}
-        />
-      </line>
-      
-      {/* Current position marker */}
-      <mesh position={currentPosition}>
-        <sphereGeometry args={[0.05, 8, 6]} />
-        <meshBasicMaterial color="#ff4757" />
-      </mesh>
-      
-      {/* Pulsing effect at current position */}
-      <mesh position={currentPosition}>
-        <ringGeometry args={[0.08, 0.12, 16]} />
-        <meshBasicMaterial 
-          color="#ff4757" 
-          transparent 
-          opacity={0.5}
-        />
-      </mesh>
-    </group>
-  )
-}
-
-function ImpactEffect({ targetPosition, isVisible }) {
-  if (!isVisible || !targetPosition) return null
-
-  // Use the point property which is already a Vector3, or create from lat/lng
-  const position = targetPosition.point ? targetPosition.point.clone() : latLngTo3D(targetPosition.lat, targetPosition.lng, 5.1)
-  
-  return (
-    <group position={[position.x, position.y, position.z]}>
-      {/* Impact crater */}
-      <mesh>
-        <cylinderGeometry args={[0.2, 0.3, 0.1, 16]} />
-        <meshBasicMaterial color="#8B4513" transparent opacity={0.8} />
-      </mesh>
-      
-      {/* Explosion effect */}
-      <mesh>
-        <sphereGeometry args={[0.5, 16, 16]} />
-        <meshBasicMaterial 
-          color="#ff4500" 
-          transparent 
-          opacity={0.3}
-        />
-      </mesh>
-      
-      {/* Shockwave rings */}
-      <mesh>
-        <ringGeometry args={[0.6, 0.8, 32]} />
-        <meshBasicMaterial 
-          color="#ff0000" 
-          transparent 
-          opacity={0.4}
-        />
-      </mesh>
-      
-      <mesh>
-        <ringGeometry args={[1.0, 1.2, 32]} />
-        <meshBasicMaterial 
-          color="#ff8800" 
-          transparent 
-          opacity={0.2}
-        />
-      </mesh>
-    </group>
-  )
-}
 
 export default function EarthVisualization({
   selectedSatellite,
@@ -417,8 +283,8 @@ export default function EarthVisualization({
   onEarthClick,
   allowSelection = false,
 }) {
-  const { satellites, loading, error } = useData()
-  const [isLoaded, setIsLoaded] = useState(true) // Always show Earth
+  const { satellites } = useData()
+  const [isLoaded] = useState(true) // Always show Earth
   const [loadedTextures, setLoadedTextures] = useState({})
 
   // Create fallback asteroids if none are loaded

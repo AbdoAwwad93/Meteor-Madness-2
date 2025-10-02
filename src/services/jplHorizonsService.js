@@ -11,7 +11,6 @@ class JPLHorizonsService {
 
   // Get current position for a single asteroid
   async getAsteroidPosition(asteroidId, designation) {
-    const cacheKey = `${asteroidId}_${Date.now()}`;
     
     // Check cache first
     if (this.cache.has(asteroidId)) {

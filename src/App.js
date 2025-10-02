@@ -210,46 +210,12 @@ const ImpactWarning = styled.div`
     color: #ffcc00;
   }
 `
-const LoadingScreen = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: #000;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  
-  h1 {
-    color: #fff;
-    font-size: 2rem;
-    margin-bottom: 1rem;
-  }
-  
-  .loader {
-    width: 50px;
-    height: 50px;
-    border: 3px solid #333;
-    border-top: 3px solid #0066cc;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-`
 
 function App() {
   const [selectedSatellite, setSelectedSatellite] = useState(null)
   const [isFocusedMode, setIsFocusedMode] = useState(false)
   const [movingAsteroid, setMovingAsteroid] = useState(null)
   const [movementProgress, setMovementProgress] = useState(0)
-  const [movementVelocity, setMovementVelocity] = useState(0.5)
   const [movementAnimationId, setMovementAnimationId] = useState(null)
   const [activeTab, setActiveTab] = useState('asteroid-watch')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -286,7 +252,6 @@ function App() {
     }
 
     setMovingAsteroid(asteroid)
-    setMovementVelocity(velocity)
     setMovementProgress(0)
 
     const startTime = Date.now()

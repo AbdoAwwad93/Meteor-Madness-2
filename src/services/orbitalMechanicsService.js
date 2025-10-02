@@ -128,8 +128,6 @@ class OrbitalMechanicsService {
     // Earth's approximate orbital elements at J2000
     const a = this.AU_KM; // Semi-major axis (1 AU)
     const e = 0.0167; // Eccentricity
-    const i = 0; // Inclination (Earth's orbit is in ecliptic plane)
-    const Omega = 0; // Longitude of ascending node
     const omega = 102.9; // Argument of perihelion (degrees)
     const M0 = 357.5; // Mean anomaly at J2000 (degrees)
     

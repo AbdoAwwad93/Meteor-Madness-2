@@ -13,7 +13,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js"
-import { enhanceAsteroidData, calculateAffectedPopulation } from "../utils/asteroidCalculations"
+import { enhanceAsteroidData } from "../utils/asteroidCalculations"
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
 
@@ -297,7 +297,6 @@ export default function InfoPanel({ asteroid, onClose }) {
   const generateOrbitData = () => {
     const data = []
     const labels = []
-    const period = asteroid.orbit?.period || 365
 
     for (let i = 0; i <= 24; i++) {
       labels.push(`${i}h`)

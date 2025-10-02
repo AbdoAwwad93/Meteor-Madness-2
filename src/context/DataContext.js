@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useReducer } from 'react';
+import React, { createContext, useContext, useEffect, useReducer } from 'react';
 import { asteroidService } from '../services/asteroidService';
 
 const DataContext = createContext();

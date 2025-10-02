@@ -2,7 +2,6 @@
 import { jplSBDBService } from './jplSBDBService';
 import { orbitalMechanicsService } from './orbitalMechanicsService';
 import * as THREE from 'three';
-import { jplHorizonsService } from './jplHorizonsService';
 
 const NASA_API_KEY = process.env.REACT_APP_NASA_API_KEY || 'DEMO_KEY';
 const NEO_API_BASE = 'https://api.nasa.gov/neo/rest/v1';

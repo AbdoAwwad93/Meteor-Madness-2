@@ -2,7 +2,7 @@
 
 
 
-export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen }) {
+export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen, onOpenGeminiConfig }) {
   return (
     <>
       <style>
@@ -107,6 +107,28 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
           onClick={() => onToggleMovement()}
         >
           Move
+        </button>
+        <button 
+          style={{
+            background: 'transparent',
+            border: 'none',
+            color: 'rgba(255, 255, 255, 0.7)',
+            cursor: 'pointer',
+            padding: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.2s ease',
+            marginRight: '10px'
+          }}
+          onClick={() => onOpenGeminiConfig && onOpenGeminiConfig()}
+          title="Configure Gemini AI"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '18px', height: '18px' }}>
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
         </button>
         <button style={{
           background: 'transparent',

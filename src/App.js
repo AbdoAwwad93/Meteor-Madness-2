@@ -9,6 +9,7 @@ import Navbar from "./components/Navbar"
 import { DataProvider } from "./context/DataContext"
 import { TimeProvider } from "./context/TimeContext"
 import AsteroidMovementControls from "./components/AsteroidMovementControls"
+import GeminiConfig from "./components/GeminiConfig"
 
 const AppContainer = styled.div`
   width: 100vw;
@@ -264,6 +265,7 @@ function App() {
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
   const [showImpactWarning, setShowImpactWarning] = useState(false)
   const [showInfoPanel, setShowInfoPanel] = useState(false)
+  const [showGeminiConfig, setShowGeminiConfig] = useState(false)
 
   // Add error boundary state
   const [hasError, setHasError] = useState(false)
@@ -370,6 +372,12 @@ function App() {
     setMovementControlsOpen(!movementControlsOpen)
   }
 
+  const handleGeminiConfigSave = (apiKey) => {
+    // Store the API key globally for the session
+    window.geminiApiKey = apiKey;
+    console.log('Gemini API key configured successfully');
+  }
+
   // Error boundary fallback
   if (hasError) {
     return (
@@ -419,6 +427,7 @@ function App() {
             onToggleMovement={handleToggleMovement}
             sidebarOpen={sidebarOpen}
             movementControlsOpen={movementControlsOpen}
+            onOpenGeminiConfig={() => setShowGeminiConfig(true)}
           />
           <MainContent>
             <ErrorBoundary onError={() => setHasError(true)}>
@@ -452,6 +461,12 @@ function App() {
               isMoving={!!movingAsteroid}
               isOpen={movementControlsOpen}
             />
+            {showGeminiConfig && (
+              <GeminiConfig
+                onClose={() => setShowGeminiConfig(false)}
+                onSave={handleGeminiConfigSave}
+              />
+            )}
           </MainContent>
         </AppContainer>
       </TimeProvider>

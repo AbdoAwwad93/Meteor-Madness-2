@@ -454,6 +454,89 @@
             font-size: 12px;
             text-align: center;
         }
+
+        /* Enhanced Tab Interface Styles */
+        .tab-container {
+            width: 100%;
+        }
+
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 15px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        .tab-btn.active {
+            color: #00e5ff;
+            border-bottom-color: #00e5ff;
+        }
+
+        .tab-btn:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .section-content {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+        .key-findings {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .finding-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #00e5ff;
+            padding: 10px 15px;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .comparison-events {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .comparison-item {
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: #00e5ff;
+        }
     </style>
 </head>
 <body>
@@ -518,6 +601,6 @@
         });
     </script> -->
     
-    <script src="js/map.js"></script>
+    <script src="js/map.js?v=2.0"></script>
 </body>
 </html>

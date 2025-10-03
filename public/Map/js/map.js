@@ -1,3 +1,4 @@
+// Cache buster - v2.0 with Gemini 1.5-flash
 let scene, camera, renderer, controls, map;
 let targetCityMarker = null;
 let impactData = null;
@@ -371,6 +372,182 @@ async function calculateImpact(impactData) {
   }
 }
 
+// Gemini AI Integration for Accessible Impact Analysis
+class GeminiService {
+  constructor() {
+    // Try to get API key from global variable set by React app, localStorage, or environment
+    this.apiKey = window.geminiApiKey || localStorage.getItem('gemini_api_key') || 'AIzaSyDJn3VEryqDiZ38BYUfFBp6pR1rK9PTyK8';
+    this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+    console.log('GeminiService initialized with URL:', this.baseUrl);
+  }
+
+  // Method to update API key dynamically
+  setApiKey(apiKey) {
+    this.apiKey = apiKey;
+    localStorage.setItem('gemini_api_key', apiKey);
+  }
+
+  async generateImpactAnalysis(impactData, asteroidData, cityData) {
+    try {
+      if (!this.apiKey) {
+        throw new Error('Gemini API key not configured. Please configure it in the main application or set it manually in the map.js file.');
+      }
+
+      const prompt = this.buildAnalysisPrompt(impactData, asteroidData, cityData);
+      const fullUrl = `${this.baseUrl}?key=${this.apiKey}`;
+      console.log('Making Gemini API call to:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 2048,
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+        throw new Error('Invalid response from Gemini API');
+      }
+
+      const aiResponse = result.candidates[0].content.parts[0].text;
+      
+      return this.parseAIResponse(aiResponse, impactData);
+    } catch (error) {
+      console.error('Error generating impact analysis with Gemini:', error);
+      throw error;
+    }
+  }
+
+  buildAnalysisPrompt(impactData, asteroidData, cityData) {
+    const { results, volcanic_impact, location } = impactData;
+    
+    return `
+You are a scientific communication expert specializing in making complex impact analysis data accessible to both scientists and the general public. 
+
+**ASTEROID IMPACT DATA:**
+- Asteroid: "${asteroidData.name || 'Unnamed Asteroid'}"
+- Size: ${asteroidData.diameter || 0.5} km diameter
+- Velocity: ${((asteroidData.velocity || 25000) / 1000).toFixed(1)} km/s
+- Target: ${cityData.name}, ${cityData.country || 'Unknown Country'}
+
+**TECHNICAL IMPACT ANALYSIS:**
+- Energy Release: ${(results.energy_joules / 1e15).toFixed(2)} × 10¹⁵ Joules (${(results.energy_joules / (4.184e9) / 1e6).toFixed(1)} Megatons TNT)
+- Crater Diameter: ${results.crater_diameter_km.toFixed(2)} km
+- Blast Radius: ${results.blast_radius_km.toFixed(1)} km
+- Earthquake Magnitude: ${results.earthquake_magnitude.toFixed(1)} Richter scale
+- Impact Surface: ${location.is_water ? 'Water (Ocean/Sea)' : 'Land'}
+- Volcanic Trigger: ${volcanic_impact.is_affected ? `Yes - ${volcanic_impact.volcano_name}` : 'No'}
+
+**TASK:**
+Transform this technical data into a comprehensive, accessible impact analysis with the following structure:
+
+**SCIENTIFIC SUMMARY:** (for researchers and professionals)
+- Precise technical details
+- Comparative analysis with historical events
+- Environmental and geological implications
+- Research significance
+
+**PUBLIC IMPACT ASSESSMENT:** (for general audience)
+- Real-world consequences in simple terms
+- Comparison to familiar events (wars, natural disasters, etc.)
+- Regional and global effects
+- Human impact and safety implications
+
+**SCIENTIFIC CONTEXT:** (educational content)
+- How this compares to other known impacts
+- What scientists would study
+- Long-term environmental effects
+- Planetary defense implications
+
+**SAFETY & RESPONSE:** (practical information)
+- Immediate effects and timeline
+- Evacuation considerations
+- Infrastructure damage assessment
+- Recovery implications
+
+Please format your response as a JSON object with these exact keys:
+{
+  "scientificSummary": "Detailed technical analysis...",
+  "publicImpact": "Accessible explanation...",
+  "scientificContext": "Educational content...",
+  "safetyResponse": "Practical information...",
+  "comparisonEvents": ["Event 1", "Event 2", "Event 3"],
+  "riskLevel": "Low|Moderate|High|Extreme",
+  "keyFindings": ["Finding 1", "Finding 2", "Finding 3"]
+}
+
+Make the content engaging, accurate, and appropriate for both audiences. Use analogies and comparisons to help people understand the scale and implications.
+    `.trim();
+  }
+
+  parseAIResponse(aiResponse, originalImpactData) {
+    try {
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+
+      const parsedData = JSON.parse(jsonMatch[0]);
+      
+      const requiredFields = ['scientificSummary', 'publicImpact', 'scientificContext', 'safetyResponse'];
+      for (const field of requiredFields) {
+        if (!parsedData[field]) {
+          throw new Error(`Missing required field: ${field}`);
+        }
+      }
+
+      return {
+        ...parsedData,
+        originalData: originalImpactData,
+        generatedAt: new Date().toISOString(),
+        source: 'gemini-ai'
+      };
+    } catch (error) {
+      console.error('Error parsing AI response:', error);
+      return this.createFallbackResponse(aiResponse, originalImpactData);
+    }
+  }
+
+  createFallbackResponse(aiResponse, originalImpactData) {
+    return {
+      scientificSummary: aiResponse.substring(0, 500) + '...',
+      publicImpact: aiResponse.substring(500, 1000) + '...',
+      scientificContext: aiResponse.substring(1000, 1500) + '...',
+      safetyResponse: aiResponse.substring(1500) || 'Safety assessment not available.',
+      comparisonEvents: ['Tunguska Event (1908)', 'Chicxulub Impact (65 MYA)'],
+      riskLevel: 'Moderate',
+      keyFindings: [
+        'Impact analysis completed',
+        'Technical data processed',
+        'AI analysis generated'
+      ],
+      originalData: originalImpactData,
+      generatedAt: new Date().toISOString(),
+      source: 'gemini-ai-fallback'
+    };
+  }
+}
+
+const geminiService = new GeminiService();
+
 function formatImpactAnalysis(impactResult) {
   if (!impactResult) return null;
 
@@ -485,8 +662,8 @@ async function calculateImpactAnalysis(asteroidData, cityData) {
     // Store impact data for visualization
     impactData = formattedAnalysis;
     
-    // Display the analysis
-    displayImpactAnalysis(formattedAnalysis, cityData);
+    // Display the analysis with Gemini AI enhancement
+    await displayEnhancedImpactAnalysis(result, asteroidData, cityData);
     
   } catch (error) {
     console.error('Failed to calculate impact:', error);
@@ -496,6 +673,237 @@ async function calculateImpactAnalysis(asteroidData, cityData) {
       </div>
     `;
   }
+}
+
+// Enhanced impact analysis display with Gemini AI integration
+async function displayEnhancedImpactAnalysis(impactResult, asteroidData, cityData) {
+  const content = document.getElementById('impactContent');
+  
+  // Show loading state
+  content.innerHTML = `
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+    </div>
+  `;
+
+  try {
+    // Generate Gemini AI analysis
+    const geminiAnalysis = await geminiService.generateImpactAnalysis(impactResult, asteroidData, cityData);
+    
+    // Create tabbed interface
+    content.innerHTML = `
+      <div class="tab-container">
+        <div class="tab-buttons">
+          <button class="tab-btn active" onclick="switchTab('public', this)">Public</button>
+          <button class="tab-btn" onclick="switchTab('scientific', this)">Scientific</button>
+          <button class="tab-btn" onclick="switchTab('technical', this)">Technical</button>
+        </div>
+        
+        <div id="public-tab" class="tab-content active">
+          ${generatePublicTab(geminiAnalysis, impactResult)}
+        </div>
+        
+        <div id="scientific-tab" class="tab-content">
+          ${generateScientificTab(geminiAnalysis, impactResult)}
+        </div>
+        
+        <div id="technical-tab" class="tab-content">
+          ${generateTechnicalTab(impactResult, asteroidData, cityData)}
+        </div>
+      </div>
+    `;
+    
+  } catch (error) {
+    console.error('Failed to generate enhanced analysis:', error);
+    // Fallback to original display
+    const formattedAnalysis = formatImpactAnalysis(impactResult);
+    displayImpactAnalysis(formattedAnalysis, cityData);
+  }
+}
+
+function switchTab(tabName, buttonElement) {
+  // Remove active class from all tabs and buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  
+  // Add active class to clicked button and corresponding content
+  buttonElement.classList.add('active');
+  document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+
+function generatePublicTab(geminiAnalysis, impactResult) {
+  const riskColor = {
+    'Low': '#00ff88',
+    'Moderate': '#ffaa00', 
+    'High': '#ff8800',
+    'Extreme': '#ff0000'
+  };
+
+  return `
+    <div class="severity-badge" style="background: ${riskColor[geminiAnalysis.riskLevel] || '#666'}">
+      ${geminiAnalysis.riskLevel || 'Moderate'} Risk
+    </div>
+
+    <div class="section">
+      <div class="section-title">🌍 Public Impact Assessment</div>
+      <div class="section-content">
+        ${geminiAnalysis.publicImpact || 'Impact assessment in progress...'}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🛡️ Safety & Response</div>
+      <div class="section-content">
+        ${geminiAnalysis.safetyResponse || 'Safety assessment in progress...'}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📊 Key Findings</div>
+      <div class="key-findings">
+        ${(geminiAnalysis.keyFindings || []).map(finding => 
+          `<div class="finding-item">${finding}</div>`
+        ).join('')}
+      </div>
+    </div>
+
+    ${geminiAnalysis.comparisonEvents ? `
+    <div class="section">
+      <div class="section-title">🔍 Similar Events</div>
+      <div class="comparison-events">
+        ${geminiAnalysis.comparisonEvents.map(event => 
+          `<span class="comparison-item">${event}</span>`
+        ).join('')}
+      </div>
+    </div>
+    ` : ''}
+  `;
+}
+
+function generateScientificTab(geminiAnalysis, impactResult) {
+  return `
+    <div class="section">
+      <div class="section-title">🔬 Scientific Summary</div>
+      <div class="section-content">
+        ${geminiAnalysis.scientificSummary || 'Scientific analysis in progress...'}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📚 Scientific Context</div>
+      <div class="section-content">
+        ${geminiAnalysis.scientificContext || 'Context analysis in progress...'}
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">📊 Key Findings</div>
+      <div class="key-findings">
+        ${(geminiAnalysis.keyFindings || []).map(finding => 
+          `<div class="finding-item">${finding}</div>`
+        ).join('')}
+      </div>
+    </div>
+  `;
+}
+
+function generateTechnicalTab(impactResult, asteroidData, cityData) {
+  const results = impactResult.results;
+  const volcanic = impactResult.volcanic_impact;
+  const location = impactResult.location;
+
+  const formatEnergy = (joules) => {
+    const tntEquivalent = joules / (4.184e9);
+    if (tntEquivalent >= 1e6) {
+      return `${(tntEquivalent / 1e6).toFixed(1)} Megatons TNT`;
+    } else if (tntEquivalent >= 1e3) {
+      return `${(tntEquivalent / 1e3).toFixed(1)} Kilotons TNT`;
+    } else {
+      return `${tntEquivalent.toFixed(1)} Tons TNT`;
+    }
+  };
+
+  return `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Energy Release</div>
+        <div class="stat-value" style="color: #00e5ff">${formatEnergy(results.energy_joules)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Crater Diameter</div>
+        <div class="stat-value" style="color: #ff4757">${results.crater_diameter_km.toFixed(1)} km</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Blast Radius</div>
+        <div class="stat-value" style="color: #ff8800">${results.blast_radius_km.toFixed(0)} km</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Earthquake</div>
+        <div class="stat-value" style="color: #ffaa00">M${results.earthquake_magnitude.toFixed(1)}</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">🎯 Impact Parameters</div>
+      <div class="section-content">
+        <div style="margin-bottom: 10px;">
+          <strong>Asteroid Size:</strong> ${asteroidData.diameter || 0.5} km diameter
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong>Velocity:</strong> ${((asteroidData.velocity || 25000) / 1000).toFixed(1)} km/s
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong>Target:</strong> ${cityData.name}, ${cityData.country || 'Unknown'}
+        </div>
+        <div style="margin-bottom: 10px;">
+          <strong>Coordinates:</strong> ${cityData.lat.toFixed(4)}°, ${cityData.lng.toFixed(4)}°
+        </div>
+        <div>
+          <strong>Surface:</strong> ${location.is_water ? 'Water' : 'Land'}
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Impact Zones</div>
+      <div class="impact-zone">
+        <div class="zone-title">Primary Impact Zone</div>
+        <div class="zone-stats">
+          <div class="zone-stat">
+            <span class="label">Crater Diameter:</span>
+            <span class="value">${results.crater_diameter_km.toFixed(1)} km</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Blast Radius:</span>
+            <span class="value">${results.blast_radius_km.toFixed(0)} km</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Earthquake Mag:</span>
+            <span class="value">${results.earthquake_magnitude.toFixed(1)}</span>
+          </div>
+          <div class="zone-stat">
+            <span class="label">Energy:</span>
+            <span class="value">${formatEnergy(results.energy_joules)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Volcanic Activity</div>
+      <div class="volcanic-info ${volcanic.is_affected ? 'affected' : ''}">
+        <div class="volcanic-title">
+          ${volcanic.is_affected ? 'Volcanic Trigger' : 'No Volcanic Activity'}
+        </div>
+        <div class="volcanic-details">
+          ${volcanic.is_affected 
+            ? `Volcanic activity triggered at ${volcanic.volcano_name}`
+            : 'Impact will not trigger volcanic activity'
+          }
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function displayImpactAnalysis(analysis, cityData) {

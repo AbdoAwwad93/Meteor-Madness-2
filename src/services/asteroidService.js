@@ -1,5 +1,4 @@
 // NASA Near Earth Object Web Service (NeoWs) API
-import { jplSBDBService } from './jplSBDBService';
 import { orbitalMechanicsService } from './orbitalMechanicsService';
 import * as THREE from 'three';
 
@@ -43,42 +42,19 @@ class AsteroidService {
     candidates.sort((a, b) => a.missKm - b.missKm);
     const top = candidates.slice(0, count);
     
-    // Get designations for JPL SBDB lookup
-    const designations = top.map(({ neo }) => neo.designation || neo.name);
+    // Map NEO data using calculated orbital positions (no JPL SBDB dependency)
+    console.log('📊 Using NASA NEO data with calculated orbital positions for all asteroids');
     
-    // Fetch orbital elements from JPL SBDB with timeout to prevent hanging
-    let orbitalElements = [];
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('JPL SBDB timeout')), 5000) // 5 second timeout
-      );
-      
-      orbitalElements = await Promise.race([
-        jplSBDBService.getMultipleOrbitalElements(designations),
-        timeoutPromise
-      ]);
-    } catch (error) {
-      console.warn('JPL SBDB lookup failed or timed out, using fallback data:', error.message);
-      orbitalElements = []; // Use fallback data
-    }
-    
-    // Map NEO data with orbital elements - try JPL SBDB first, then fallback to calculated positions
     const enrichedAsteroids = [];
     
     for (let i = 0; i < top.length; i++) {
       const { neo, approach } = top[i];
-      const elements = orbitalElements[i];
       
       try {
-        if (elements) {
-          // Use real JPL SBDB orbital elements
-          const asteroid = this.mapNeoToAsteroidWithOrbitalData(neo, approach, elements);
-          enrichedAsteroids.push(asteroid);
-        } else {
-          // Fallback: Calculate position using NASA NEO data and orbital mechanics
-          const asteroid = this.mapNeoToAsteroidWithCalculatedPosition(neo, approach);
-          enrichedAsteroids.push(asteroid);
-        }
+        // Calculate position using NASA NEO data and orbital mechanics
+        const asteroid = this.mapNeoToAsteroidWithCalculatedPosition(neo, approach);
+        enrichedAsteroids.push(asteroid);
+        console.log(`✓ ${neo.name}: Using calculated orbital position from NASA NEO data`);
       } catch (error) {
         console.warn(`Failed to process asteroid ${neo.name}, using basic mapping:`, error.message);
         // Ultimate fallback: basic asteroid mapping
@@ -86,6 +62,11 @@ class AsteroidService {
         enrichedAsteroids.push(asteroid);
       }
     }
+    
+    console.log(`\n📊 Asteroid Data Summary:`);
+    console.log(`   ✓ Calculated positions: ${enrichedAsteroids.length} asteroids`);
+    console.log(`   📡 Data source: NASA NEO API`);
+    console.log(`   🚀 Status: Fast loading, no external dependencies\n`);
     
     if (enrichedAsteroids.length === 0) {
       throw new Error('No asteroids could be loaded. All API calls failed.');
@@ -121,58 +102,6 @@ class AsteroidService {
     };
   }
 
-  mapNeoToAsteroidWithOrbitalData(neo, ca, orbitalElements) {
-    const today = new Date().toISOString().split('T')[0];
-    const diameterKm = orbitalElements?.diameter || neo.estimated_diameter?.kilometers?.estimated_diameter_average || 0.5;
-    const relVelocity = ca ? parseFloat(ca.relative_velocity?.kilometers_per_hour) : 0;
-    const missDistanceKm = ca ? parseFloat(ca.miss_distance?.kilometers) : 0;
-    
-    // Use real orbital elements if available
-    const hasRealOrbitalData = orbitalElements && orbitalElements.a && orbitalElements.e !== null;
-    
-    let orbit, realPosition = null;
-    
-    if (hasRealOrbitalData) {
-      // Calculate real position using orbital mechanics
-      realPosition = orbitalMechanicsService.getAsteroidScenePosition(orbitalElements, new Date());
-      
-      // Calculate orbital period from semi-major axis
-      const period = orbitalMechanicsService.calculateOrbitalPeriod(orbitalElements.a);
-      
-      orbit = {
-        semiMajorAxis: orbitalElements.a,
-        eccentricity: orbitalElements.e,
-        inclination: orbitalElements.i,
-        longitudeOfAscendingNode: orbitalElements.om,
-        argumentOfPerihelion: orbitalElements.w,
-        meanAnomaly: orbitalElements.ma,
-        period: period,
-        epoch: orbitalElements.epoch_jd
-      };
-        } else {
-          // NO FALLBACK - throw error if no real orbital data
-          throw new Error(`No orbital elements available for ${neo.name}. Real orbital data required.`);
-        }
-    
-    return {
-      id: neo.id,
-      name: orbitalElements?.name || neo.name,
-      designation: neo.designation || neo.name,
-      type: 'Near Earth Object',
-      status: neo.is_potentially_hazardous_asteroid ? 'Hazardous' : 'Safe',
-      diameter: diameterKm,
-      velocity: relVelocity,
-      distance: missDistanceKm,
-      orbit: orbit,
-      realPosition: realPosition, // Calculated real position in scene coordinates
-      hasRealOrbitalData: hasRealOrbitalData,
-      orbitalElements: orbitalElements, // Full orbital elements for advanced calculations
-      orbitProgress: Math.random(),
-      magnitude: neo.absolute_magnitude_h,
-      discoveryDate: (ca && ca.close_approach_date) || today,
-      isPotentiallyHazardous: neo.is_potentially_hazardous_asteroid
-    };
-  }
 
   mapNeoToAsteroidWithCalculatedPosition(neo, ca) {
     const today = new Date().toISOString().split('T')[0];

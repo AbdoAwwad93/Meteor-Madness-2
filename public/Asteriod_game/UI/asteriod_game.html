@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Meteor Madness</title>
+  <link rel="stylesheet" href="./style/asteriod_game_style.css"> 
+</head>
+<body>
+  <div id="asteroidSelection" class="selection-screen">
+    <div class="selection-container">
+      <h1>Choose Your Asteroid</h1>
+      
+      <div class="asteroid-viewer">
+        <button class="nav-btn left-btn" id="prevAsteroid">◀</button>
+        <div id="asteroidPreview"></div>
+        <button class="nav-btn right-btn" id="nextAsteroid">▶</button>
+      </div>
+
+      <div class="asteroid-info">
+        <h2 id="asteroidName">Iron Asteroid</h2>
+      </div>
+
+      <div class="size-selector">
+        <label>Asteroid Size:</label>
+        <input type="range" id="sizeSlider" min="1" max="5" value="1" step="0.5">
+        <span id="sizeValue">1x</span>
+      </div>
+
+      <button id="launchBtn" class="launch-btn">LAUNCH SIMULATION</button>
+    </div>
+  </div>
+
+  <div id="mainScreen" style="display: none;">
+    <div class="search-container">
+      <input type="text" id="search" placeholder="Search for a city...">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <button id="asteroidBtn">Launch Asteroid</button>
+    <button id="changeAsteroidBtn">Change Asteroid</button>
+
+    <div id="asteroidMenu" class="asteroid-menu" style="display: none;">
+      <div class="menu-content">
+        <h3>Select New Asteroid</h3>
+        
+        <div class="asteroid-options">
+          <div class="asteroid-option" data-index="0">
+            <div class="option-preview" id="option-0"></div>
+            <p>Iron Asteroid</p>
+          </div>
+          <div class="asteroid-option" data-index="1">
+            <div class="option-preview" id="option-1"></div>
+            <p>Rocky Asteroid</p>
+          </div>
+          <div class="asteroid-option" data-index="2">
+            <div class="option-preview" id="option-2"></div>
+            <p>Carbon Asteroid</p>
+          </div>
+          <div class="asteroid-option" data-index="3">
+            <div class="option-preview" id="option-3"></div>
+            <p>Ice Asteroid</p>
+          </div>
+        </div>
+
+        <div class="size-selector-menu">
+          <label>Size:</label>
+          <input type="range" id="sizeSliderMenu" min="1" max="5" value="1" step="0.5">
+          <span id="sizeValueMenu">1x</span>
+        </div>
+
+        <div class="menu-buttons">
+          <button id="confirmAsteroid" class="confirm-btn">Confirm</button>
+          <button id="cancelAsteroid" class="cancel-btn">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+
+  <script src="../js/asteriod_game.js"></script>
+</body>
+</html>

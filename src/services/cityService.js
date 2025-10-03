@@ -8,7 +8,7 @@
 class CityService {
   constructor() {
     this.GEONAMES_API_BASE = 'http://api.geonames.org';
-    this.GEONAMES_USERNAME = 'awwad411'; // Using demo account (enabled for free service)
+    this.GEONAMES_USERNAME = 'awwad411';
     this.cache = new Map();
     this.cacheTimeout = 24 * 60 * 60 * 1000; // 24 hours cache
   }

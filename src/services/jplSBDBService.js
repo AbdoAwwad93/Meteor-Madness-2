@@ -87,22 +87,20 @@ class JPLSBDBService {
   }
 
   async getMultipleOrbitalElements(designations) {
-    const results = [];
+    // Use Promise.allSettled to make parallel requests instead of sequential
+    const promises = designations.map(designation => 
+      this.getOrbitalElements(designation).catch(error => {
+        // Return null for failed requests instead of throwing
+        return null;
+      })
+    );
     
-    for (const designation of designations) {
-      try {
-        const elements = await this.getOrbitalElements(designation);
-        if (elements) {
-          results.push(elements);
-        }
-        // Add small delay to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 100));
-          } catch (error) {
-            // Silent error handling
-          }
-    }
+    const results = await Promise.allSettled(promises);
     
-    return results;
+    // Extract successful results
+    return results
+      .map(result => result.status === 'fulfilled' ? result.value : null)
+      .filter(elements => elements !== null);
   }
 }
 

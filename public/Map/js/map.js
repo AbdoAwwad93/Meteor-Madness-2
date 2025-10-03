@@ -1,4 +1,4 @@
-let scene, camera, renderer, controls, map, citiesData = [];
+let scene, camera, renderer, controls, map;
 let targetCityMarker = null;
 let impactData = null;
 
@@ -60,16 +60,14 @@ function MapMadness() {
   });
 }
 
-async function loadCities() {
-  try {
-    const res = await fetch("../data/cities.json");
-    citiesData = await res.json();
-    document.getElementById("searchBox").disabled = false;
-  } catch (err) {
-    alert("Failed to load cities.json");
+// Cities data is now handled by the React app, no need to load cities.json
+// Enable search box immediately since we don't need to wait for data
+document.addEventListener('DOMContentLoaded', function() {
+  const searchBox = document.getElementById("searchBox");
+  if (searchBox) {
+    searchBox.disabled = false;
   }
-}
-loadCities();
+});
 
 function latLonToXY(lat, lon, width = 400, height = 200) {
   let x = (lon + 180) * (width / 360) - width / 2;
@@ -253,16 +251,9 @@ function dropMeteor(lat, lon) {
 
 document.getElementById("searchBox").addEventListener("keyup", (e) => {
   if (e.key === "Enter") {
-    const query = e.target.value.toLowerCase();
-    const city = citiesData.find(c => c.name.toLowerCase().includes(query));
-
-    if (city) {
-      addCityMarker(city.lat, city.lng, city.name);
-      zoomToCity(city.lat, city.lng);
-      dropMeteor(city.lat, city.lng);
-    } else {
-      alert("City not found!");
-    }
+    // Search functionality is now handled by the React app
+    // This map page receives city data via URL parameters
+    alert("Please use the city search in the main application to select a target city.");
   }
 });
 

@@ -1,6 +1,12 @@
 import * as THREE from 'three'
+import { cityService } from '../services/cityService'
 
-// Major world cities with coordinates, population, and metadata
+// Get cities dynamically from API
+export const getCities = async () => {
+  return await cityService.getMajorCities();
+};
+
+// Legacy static cities array (kept for backward compatibility)
 export const cities = [
   {
     id: 'new-york',
@@ -219,13 +225,24 @@ export function latLngTo3D(lat, lng, radius = 5) {
   return new THREE.Vector3(x, y, z)
 }
 
-// Get city by ID
-export function getCityById(id) {
-  return cities.find(city => city.id === id)
+// Get city by ID (now uses API)
+export async function getCityById(id) {
+  return await cityService.getCityById(id);
 }
 
-// Get all cities sorted by population
-export function getCitiesByPopulation() {
-  return [...cities].sort((a, b) => b.population - a.population)
+// Get all cities sorted by population (now uses API)
+export async function getCitiesByPopulation() {
+  const cities = await getCities();
+  return cities.sort((a, b) => b.population - a.population);
+}
+
+// Search cities by name
+export async function searchCities(query) {
+  return await cityService.searchCities(query);
+}
+
+// Get random cities for impact simulation
+export async function getRandomCities(count = 5) {
+  return await cityService.getRandomCities(count);
 }
 

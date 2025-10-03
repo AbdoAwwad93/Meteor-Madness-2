@@ -10,9 +10,11 @@ class AsteroidService {
   async getAsteroids() {
     try {
       return await this.getClosestLive(5);
-        } catch (error) {
-          throw error; // Re-throw error instead of using fallback
-        }
+    } catch (error) {
+      console.error('Failed to load asteroids:', error);
+      // Return empty array instead of throwing to prevent crashes
+      return [];
+    }
   }
 
   async getClosestLive(count = 5) {
@@ -44,8 +46,21 @@ class AsteroidService {
     // Get designations for JPL SBDB lookup
     const designations = top.map(({ neo }) => neo.designation || neo.name);
     
-    // Fetch orbital elements from JPL SBDB
-        const orbitalElements = await jplSBDBService.getMultipleOrbitalElements(designations);
+    // Fetch orbital elements from JPL SBDB with timeout to prevent hanging
+    let orbitalElements = [];
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('JPL SBDB timeout')), 5000) // 5 second timeout
+      );
+      
+      orbitalElements = await Promise.race([
+        jplSBDBService.getMultipleOrbitalElements(designations),
+        timeoutPromise
+      ]);
+    } catch (error) {
+      console.warn('JPL SBDB lookup failed or timed out, using fallback data:', error.message);
+      orbitalElements = []; // Use fallback data
+    }
     
     // Map NEO data with orbital elements - try JPL SBDB first, then fallback to calculated positions
     const enrichedAsteroids = [];
@@ -54,15 +69,22 @@ class AsteroidService {
       const { neo, approach } = top[i];
       const elements = orbitalElements[i];
       
-          if (elements) {
-            // Use real JPL SBDB orbital elements
-            const asteroid = this.mapNeoToAsteroidWithOrbitalData(neo, approach, elements);
-            enrichedAsteroids.push(asteroid);
-          } else {
-            // Fallback: Calculate position using NASA NEO data and orbital mechanics
-            const asteroid = this.mapNeoToAsteroidWithCalculatedPosition(neo, approach);
-            enrichedAsteroids.push(asteroid);
-          }
+      try {
+        if (elements) {
+          // Use real JPL SBDB orbital elements
+          const asteroid = this.mapNeoToAsteroidWithOrbitalData(neo, approach, elements);
+          enrichedAsteroids.push(asteroid);
+        } else {
+          // Fallback: Calculate position using NASA NEO data and orbital mechanics
+          const asteroid = this.mapNeoToAsteroidWithCalculatedPosition(neo, approach);
+          enrichedAsteroids.push(asteroid);
+        }
+      } catch (error) {
+        console.warn(`Failed to process asteroid ${neo.name}, using basic mapping:`, error.message);
+        // Ultimate fallback: basic asteroid mapping
+        const asteroid = this.mapNeoToAsteroid(neo, approach);
+        enrichedAsteroids.push(asteroid);
+      }
     }
     
     if (enrichedAsteroids.length === 0) {

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Component } from "react"
 import styled, { createGlobalStyle } from "styled-components"
 import EarthVisualization from "./components/EarthVisualization"
 import Sidebar from "./components/Sidebar"
@@ -211,6 +211,47 @@ const ImpactWarning = styled.div`
   }
 `
 
+// Error Boundary Component
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Error caught by boundary:', error, errorInfo)
+    if (this.props.onError) {
+      this.props.onError()
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          color: 'white',
+          textAlign: 'center'
+        }}>
+          <div>
+            <h2>Error loading asteroids</h2>
+            <p>Please refresh the page</p>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
 function App() {
   const [selectedSatellite, setSelectedSatellite] = useState(null)
   const [isFocusedMode, setIsFocusedMode] = useState(false)
@@ -223,6 +264,9 @@ function App() {
   const [cameraReachedAsteroid, setCameraReachedAsteroid] = useState(false)
   const [showImpactWarning, setShowImpactWarning] = useState(false)
   const [showInfoPanel, setShowInfoPanel] = useState(false)
+
+  // Add error boundary state
+  const [hasError, setHasError] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
@@ -281,8 +325,8 @@ function App() {
           if (cityData) {
             const params = new URLSearchParams({
               city: cityData.name,
-              lat: cityData.lat.toString(),
-              lng: cityData.lng.toString(),
+              lat: (cityData.coordinates?.lat || cityData.lat || 0).toString(),
+              lng: (cityData.coordinates?.lng || cityData.lng || 0).toString(),
               country: cityData.country || '',
               asteroidName: asteroid.name || '',
               asteroidDiameter: (asteroid.diameter || 0.5).toString(),
@@ -326,6 +370,43 @@ function App() {
     setMovementControlsOpen(!movementControlsOpen)
   }
 
+  // Error boundary fallback
+  if (hasError) {
+    return (
+      <AppContainer>
+        <GlobalStyle />
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          height: '100vh',
+          color: 'white',
+          textAlign: 'center',
+          padding: '20px'
+        }}>
+          <h1>🌍 Meteor Madness</h1>
+          <h2>Something went wrong while loading asteroids</h2>
+          <p>Please refresh the page to try again.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{
+              padding: '10px 20px',
+              background: '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              marginTop: '20px'
+            }}
+          >
+            Refresh Page
+          </button>
+        </div>
+      </AppContainer>
+    )
+  }
+
   return (
     <DataProvider>
       <TimeProvider>
@@ -340,16 +421,18 @@ function App() {
             movementControlsOpen={movementControlsOpen}
           />
           <MainContent>
-            <EarthVisualization
-              selectedSatellite={selectedSatellite}
-              onSatelliteSelect={handleAsteroidSelect}
-              isFocusedMode={isFocusedMode}
-              movingAsteroid={movingAsteroid}
-              movementProgress={movementProgress}
-              onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
-            />
-            <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
-            {selectedSatellite && cameraReachedAsteroid && showInfoPanel && <InfoPanel asteroid={selectedSatellite} onClose={handleCloseInfoPanel} />}
+            <ErrorBoundary onError={() => setHasError(true)}>
+              <EarthVisualization
+                selectedSatellite={selectedSatellite}
+                onSatelliteSelect={handleAsteroidSelect}
+                isFocusedMode={isFocusedMode}
+                movingAsteroid={movingAsteroid}
+                movementProgress={movementProgress}
+                onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
+              />
+              <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
+              {selectedSatellite && cameraReachedAsteroid && showInfoPanel && <InfoPanel asteroid={selectedSatellite} onClose={handleCloseInfoPanel} />}
+            </ErrorBoundary>
             {isFocusedMode && (
               <BackToEarthButton onClick={handleBackToEarth}>
                 <span className="icon">←</span>

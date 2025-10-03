@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import styled from "styled-components"
 import { useData } from "../context/DataContext"
+import { cityService } from "../services/cityService"
 
 const ControlsContainer = styled.div`
   position: fixed;
@@ -294,15 +295,16 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
   const [selectedCity, setSelectedCity] = useState(null)
   const [showSearchResults, setShowSearchResults] = useState(false)
 
-  // Load cities data
+  // Load cities data from API
   useEffect(() => {
     const loadCities = async () => {
       try {
-        const response = await fetch('/data/cities.json')
-        const data = await response.json()
-        setCitiesData(data)
+        const cities = await cityService.getMajorCities()
+        setCitiesData(cities)
       } catch (error) {
         console.error('Failed to load cities data:', error)
+        // Fallback to empty array if API fails
+        setCitiesData([])
       }
     }
     loadCities()
@@ -314,11 +316,19 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     setSearchQuery(query)
     
     if (query.length > 2) {
-      const results = citiesData.filter(city => 
-        city.name.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 5) // Limit to 5 results
-      setSearchResults(results)
-      setShowSearchResults(true)
+      // Use API search for better results
+      cityService.searchCities(query).then(results => {
+        setSearchResults(results) // Show ALL results, no limits
+        setShowSearchResults(true)
+      }).catch(error => {
+        console.error('Search failed:', error)
+        // Fallback to local search
+        const localResults = citiesData.filter(city => 
+          city.name.toLowerCase().includes(query.toLowerCase())
+        )
+        setSearchResults(localResults)
+        setShowSearchResults(true)
+      })
     } else {
       setSearchResults([])
       setShowSearchResults(false)
@@ -334,8 +344,8 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
     // Update target position for compatibility
     if (onTargetPositionChange) {
       onTargetPositionChange({
-        lat: city.lat,
-        lng: city.lng,
+        lat: city.coordinates.lat,
+        lng: city.coordinates.lng,
         name: city.name,
         country: city.country
       })
@@ -355,8 +365,8 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
       ...asteroid,
       targetCity: selectedCity,
       targetPosition: {
-        lat: selectedCity.lat,
-        lng: selectedCity.lng,
+        lat: selectedCity.coordinates.lat,
+        lng: selectedCity.coordinates.lng,
         name: selectedCity.name,
         country: selectedCity.country
       }
@@ -474,8 +484,8 @@ export default function AsteroidMovementControls({ onStartMovement, onStopMoveme
         <SelectedCityInfo>
           <div className="city-name">Target Selected: {selectedCity.name}</div>
           <div className="city-details">
-            <span>Lat: {selectedCity.lat?.toFixed(2)}°</span>
-            <span>Lng: {selectedCity.lng?.toFixed(2)}°</span>
+            <span>Lat: {selectedCity.coordinates?.lat?.toFixed(2)}°</span>
+            <span>Lng: {selectedCity.coordinates?.lng?.toFixed(2)}°</span>
           </div>
         </SelectedCityInfo>
       )}

@@ -65,13 +65,24 @@ export function DataProvider({ children }) {
   useEffect(() => {
     loadSatellites();
     
-        // Refresh asteroid positions every 5 minutes for real-time updates
-        const interval = setInterval(() => {
+    // Only refresh if we successfully loaded asteroids initially
+    let interval;
+    const setupInterval = () => {
+      if (state.satellites.length > 0 && !state.error) {
+        interval = setInterval(() => {
           loadSatellites();
         }, 5 * 60 * 1000); // 5 minutes
+      }
+    };
     
-    return () => clearInterval(interval);
-  }, []);
+    // Set up interval after initial load
+    const timeout = setTimeout(setupInterval, 2000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [state.satellites.length, state.error]);
 
   const value = {
     ...state,

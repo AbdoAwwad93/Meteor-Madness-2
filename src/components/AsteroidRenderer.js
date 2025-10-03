@@ -81,18 +81,7 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
   // Also try loading the stone texture directly as a fallback
   const stoneTexture = useTexture("/textures/Asteroids/photo-stone-texture-pattern.jpg")
   
-  // Debug texture loading
-  console.log("Textures loaded:", textures)
-  if (textures && textures.length > 0) {
-    textures.forEach((texture, index) => {
-      console.log(`Texture ${index}:`, {
-        loaded: texture?.image ? "YES" : "NO",
-        src: texture?.image?.src,
-        width: texture?.image?.width,
-        height: texture?.image?.height
-      })
-    })
-  }
+  // Debug texture loading (removed console.logs to prevent memory issues)
 
   // Select texture deterministically based on asteroid ID
   const selectedTexture = useMemo(() => {
@@ -134,10 +123,8 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
     // Get the appropriate model based on selection
     if (selectedModel.path === "/3D_models/Itokawa_1_1.glb" && gltf1?.scene) {
       sourceModel = gltf1.scene
-      console.log("Using Itokawa GLB model for asteroid:", asteroidId)
     } else if (selectedModel.path === "/3D_models/Apophis Model 1.obj" && objModel) {
       sourceModel = objModel
-      console.log("Using Apophis OBJ model for asteroid:", asteroidId)
     }
 
     if (sourceModel && selectedTexture) {

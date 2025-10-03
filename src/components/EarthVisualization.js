@@ -50,15 +50,14 @@ function Earth({ activeDataLayer, textures = {}, onEarthClick, allowSelection = 
   )
 }
 
-function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid }) {
+function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid, movingAsteroid }) {
   const { camera } = useThree()
   const controlsRef = useRef()
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  useEffect(() => {
-    camera.position.set(0, 0, 20)
-    camera.lookAt(0, 0, 0)
-  }, [camera])
+  // Removed automatic camera reset - camera will stay where user positions it
+
+  // Removed user control detection - no longer needed since we don't auto-reset camera
 
   // Handle asteroid selection and camera movement
   useEffect(() => {
@@ -178,44 +177,9 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
 
         animateCamera()
       }
-    } else if (!selectedAsteroid && controlsRef.current) {
-      // Reset camera to Earth view when no asteroid is selected
-      setIsTransitioning(true)
-      const startPosition = camera.position.clone()
-      const startTarget = controlsRef.current?.target?.clone() || new THREE.Vector3(0, 0, 0)
-      const targetPosition = new THREE.Vector3(0, 0, 20)
-      const targetTarget = new THREE.Vector3(0, 0, 0)
-      const duration = 3000 // Faster return to main view
-      const startTime = Date.now()
-
-      const animateCamera = () => {
-        const elapsed = Date.now() - startTime
-        const progress = Math.min(elapsed / duration, 1)
-
-        // Improved easing function for smoother, faster transition
-        const easeInOutCubic = progress < 0.5 
-          ? 4 * progress * progress * progress 
-          : 1 - Math.pow(-2 * progress + 2, 3) / 2
-
-        // Interpolate camera position
-        camera.position.lerpVectors(startPosition, targetPosition, easeInOutCubic)
-
-        // Interpolate target (look at Earth) - only if controls exist
-        if (controlsRef.current) {
-          controlsRef.current.target.lerpVectors(startTarget, targetTarget, easeInOutCubic)
-          controlsRef.current.update()
-        }
-
-        if (progress < 1) {
-          requestAnimationFrame(animateCamera)
-        } else {
-          setIsTransitioning(false)
-        }
-      }
-
-      animateCamera()
     }
-  }, [selectedAsteroid, asteroids, camera, isFocusedMode, onCameraReachedAsteroid])
+    // Removed automatic camera reset to Earth view - camera stays where user positions it
+  }, [selectedAsteroid, asteroids, camera, isFocusedMode, onCameraReachedAsteroid, movingAsteroid])
 
   return (
     <OrbitControls
@@ -228,7 +192,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       rotateSpeed={0.5}
       minDistance={0.18} // Allow very close zoom for detailed asteroid viewing
       maxDistance={500}
-      enabled={!isTransitioning} // Disable controls during transition
+      enabled={true} // Always allow camera controls
     />
   )
 }
@@ -501,7 +465,7 @@ export default function EarthVisualization({
           {/* Impact effects removed as requested */}
         </>
       )}
-      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} />
+      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} movingAsteroid={movingAsteroid} />
     </Canvas>
   )
 }

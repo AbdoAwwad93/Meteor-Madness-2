@@ -211,18 +211,16 @@ export const cities = [
 ]
 
 // Convert lat/lng to 3D coordinates on Earth sphere
-// Using the same logic as EarthVisualization.js handleClick (inverse conversion)
+// Using the same coordinate system as the asteroid game for consistency
 export function latLngTo3D(lat, lng, radius = 5) {
-  // Convert lat/lng to radians
-  const latRad = lat * (Math.PI / 180)
-  const lngRad = lng * (Math.PI / 180)
-  
-  // Use the inverse of the Earth click conversion logic
-  const x = radius * Math.cos(latRad) * Math.cos(lngRad)
-  const y = radius * Math.sin(latRad)
-  const z = radius * Math.cos(latRad) * Math.sin(lngRad)
-  
-  return new THREE.Vector3(x, y, z)
+  const phi = (90 - lat) * (Math.PI / 180);
+  const theta = (lng + 140) * (Math.PI / 180);
+
+  return new THREE.Vector3(
+    radius * Math.sin(phi) * Math.cos(theta),
+    radius * Math.cos(phi),
+    -radius * Math.sin(phi) * Math.sin(theta)
+  );
 }
 
 // Get city by ID (now uses API)

@@ -10,6 +10,9 @@ body {
   background: #000;
 }
 
+/* =======================
+   شاشة اختيار النيزك
+   ======================= */
 
 .selection-screen {
   position: fixed;
@@ -156,6 +159,9 @@ body {
   box-shadow: 0 10px 30px rgba(0, 119, 255, 0.6);
 }
 
+/* =======================
+   الشاشة الرئيسية
+   ======================= */
 
 .search-container {
   position: absolute;
@@ -286,6 +292,9 @@ body {
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
 }
 
+/* =======================
+   قائمة اختيار النيزك
+   ======================= */
 .asteroid-menu {
   position: fixed;
   top: 0;
@@ -381,6 +390,9 @@ body {
   box-shadow: 0 0 15px rgba(0, 200, 255, 0.8);
 }
 
+/* =======================
+   خيارات النيازك
+   ======================= */
 .asteroid-options {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -565,7 +577,9 @@ body {
   text-transform: uppercase;
 }
 
-
+/* =======================
+   اختيار الحجم
+   ======================= */
 .size-selector-menu {
   margin: 35px 0;
   display: flex;
@@ -712,7 +726,9 @@ body {
   text-shadow: 0 0 15px rgba(0, 255, 136, 0.8);
 }
 
-
+/* =======================
+   أزرار التأكيد والإلغاء
+   ======================= */
 .menu-buttons {
   display: flex;
   gap: 25px;
@@ -858,5 +874,199 @@ body {
   
   .menu-buttons {
     flex-direction: column;
+  }
+}
+
+/* =======================
+   قائمة اختيار نوع الدفاع
+   ======================= */
+.defense-menu {
+  position: fixed;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, rgba(26, 26, 62, 0.95) 0%, rgba(42, 42, 94, 0.95) 100%);
+  padding: 30px 25px;
+  border-radius: 25px;
+  border: 3px solid rgba(0, 200, 255, 0.4);
+  box-shadow: 0 15px 50px rgba(0, 200, 255, 0.4),
+              0 0 60px rgba(118, 75, 162, 0.2),
+              inset 0 -2px 20px rgba(0, 200, 255, 0.1);
+  z-index: 100;
+  backdrop-filter: blur(15px);
+  animation: slideInRight 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  max-width: 220px;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateY(-50%) translateX(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+  }
+}
+
+.defense-menu h3 {
+  color: #00d4ff;
+  text-align: center;
+  font-size: 1.6rem;
+  margin-bottom: 25px;
+  text-shadow: 0 0 20px rgba(0, 200, 255, 0.8);
+  letter-spacing: 2px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.defense-options {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.defense-option {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%);
+  border: 2px solid rgba(0, 200, 255, 0.3);
+  border-radius: 15px;
+  padding: 15px;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.defense-option::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(0, 200, 255, 0.3) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  transition: width 0.5s ease, height 0.5s ease;
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.defense-option:hover {
+  transform: translateX(-8px) scale(1.05);
+  border-color: rgba(0, 200, 255, 0.8);
+  background: linear-gradient(135deg, rgba(0, 200, 255, 0.15) 0%, rgba(0, 200, 255, 0.25) 100%);
+  box-shadow: 0 10px 30px rgba(0, 200, 255, 0.4);
+}
+
+.defense-option:hover::before {
+  width: 200px;
+  height: 200px;
+}
+
+.defense-option.selected {
+  border-color: #00ff88;
+  border-width: 3px;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.2) 0%, rgba(0, 200, 255, 0.3) 100%);
+  box-shadow: 0 0 30px rgba(0, 255, 136, 0.6),
+              0 10px 35px rgba(0, 255, 136, 0.3);
+  transform: translateX(-5px) scale(1.08);
+}
+
+.defense-option.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 25px;
+  height: 25px;
+  background: linear-gradient(135deg, #00ff88 0%, #00cc66 100%);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 1);
+  animation: checkPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes checkPop {
+  0% {
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.defense-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+  filter: drop-shadow(0 0 10px rgba(0, 200, 255, 0.6));
+  transition: transform 0.3s ease;
+}
+
+.defense-option:hover .defense-icon {
+  transform: scale(1.2) rotate(10deg);
+}
+
+.defense-option.selected .defense-icon {
+  animation: iconBounce 0.6s ease;
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: scale(1) translateY(0); }
+  50% { transform: scale(1.15) translateY(-5px); }
+}
+
+.defense-option p {
+  color: white;
+  font-size: 14px;
+  font-weight: 700;
+  margin: 5px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 1;
+}
+
+.defense-desc {
+  display: block;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  margin-top: 3px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .defense-menu {
+    right: 10px;
+    padding: 20px 15px;
+    max-width: 180px;
+  }
+  
+  .defense-menu h3 {
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+  }
+  
+  .defense-icon {
+    font-size: 2rem;
+  }
+  
+  .defense-option p {
+    font-size: 12px;
+  }
+  
+  .defense-desc {
+    font-size: 10px;
   }
 }

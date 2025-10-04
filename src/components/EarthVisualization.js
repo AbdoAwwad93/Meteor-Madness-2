@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useEffect, useState } from "react"
+import { useRef, useEffect, useState, useImperativeHandle } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
@@ -50,18 +50,71 @@ function Earth({ activeDataLayer, textures = {}, onEarthClick, allowSelection = 
   )
 }
 
-function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid, movingAsteroid }) {
+function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCameraReachedAsteroid, movingAsteroid, resetCameraRef, isResettingCamera, onResetComplete }) {
   const { camera } = useThree()
   const controlsRef = useRef()
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isResetting, setIsResetting] = useState(false)
 
-  // Removed automatic camera reset - camera will stay where user positions it
+  // Default camera position
+  const defaultCameraPosition = new THREE.Vector3(0, 0, 20)
+  const defaultTarget = new THREE.Vector3(0, 0, 0)
 
-  // Removed user control detection - no longer needed since we don't auto-reset camera
-
+  // Expose reset function to parent component
+  useImperativeHandle(resetCameraRef, () => ({
+    resetToDefault: () => {
+      if (controlsRef.current && camera) {
+        setIsResetting(true)
+        setIsTransitioning(true)
+        
+        const startPosition = camera.position.clone()
+        const startTarget = controlsRef.current.target.clone()
+        
+        const startTime = Date.now()
+        const duration = 3000
+        
+        const animateReset = () => {
+          const elapsed = Date.now() - startTime
+          const progress = Math.min(elapsed / duration, 1)
+          
+          // Smooth easing function
+          const easeInOutCubic = progress < 0.5 
+            ? 4 * progress * progress * progress 
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2
+          
+          // Interpolate camera position
+          camera.position.lerpVectors(startPosition, defaultCameraPosition, easeInOutCubic)
+          
+          // Interpolate target (look at Earth center)
+          if (controlsRef.current) {
+            controlsRef.current.target.lerpVectors(startTarget, defaultTarget, easeInOutCubic)
+            controlsRef.current.update()
+          }
+          
+          if (progress < 1) {
+            requestAnimationFrame(animateReset)
+          } else {
+            setIsTransitioning(false)
+            setIsResetting(false)
+            // Call the parent callback to clear the reset flag
+            if (onResetComplete) {
+              onResetComplete()
+            }
+          }
+        }
+        
+        animateReset()
+      }
+    }
+  }))
   // Handle asteroid selection and camera movement
   useEffect(() => {
-    if (selectedAsteroid && asteroids && controlsRef.current) {
+    // Don't move camera if we're resetting or if no asteroid is selected
+    if (!selectedAsteroid || !asteroids || !controlsRef.current || isResetting || isResettingCamera) {
+      return
+    }
+    
+    if (selectedAsteroid && asteroids && controlsRef.current && !isResetting && !isResettingCamera) {
       const asteroid = asteroids.find((a) => a.id === selectedAsteroid.id)
       if (asteroid) {
         setIsTransitioning(true)
@@ -179,7 +232,7 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
       }
     }
     // Removed automatic camera reset to Earth view - camera stays where user positions it
-  }, [selectedAsteroid, asteroids, camera, isFocusedMode, onCameraReachedAsteroid, movingAsteroid])
+  }, [selectedAsteroid, asteroids, camera, isFocusedMode, onCameraReachedAsteroid, movingAsteroid, isResetting, isResettingCamera])
 
   return (
     <OrbitControls
@@ -246,6 +299,9 @@ export default function EarthVisualization({
   targetPosition,
   onEarthClick,
   allowSelection = false,
+  resetCameraRef,
+  isResettingCamera,
+  onResetComplete,
 }) {
   const { satellites } = useData()
   const [isLoaded] = useState(true) // Always show Earth
@@ -465,7 +521,7 @@ export default function EarthVisualization({
           {/* Impact effects removed as requested */}
         </>
       )}
-      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} movingAsteroid={movingAsteroid} />
+      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} movingAsteroid={movingAsteroid} resetCameraRef={resetCameraRef} isResettingCamera={isResettingCamera} onResetComplete={onResetComplete} />
     </Canvas>
   )
 }

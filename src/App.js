@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Component } from "react"
+import { useState, Component, useRef } from "react"
 import styled, { createGlobalStyle } from "styled-components"
 import EarthVisualization from "./components/EarthVisualization"
 import Sidebar from "./components/Sidebar"
@@ -269,6 +269,12 @@ function App() {
 
   // Add error boundary state
   const [hasError, setHasError] = useState(false)
+  
+  // Camera reset ref
+  const cameraResetRef = useRef()
+  
+  // Add a flag to prevent camera movement during reset
+  const [isResettingCamera, setIsResettingCamera] = useState(false)
 
   const handleAsteroidSelect = (asteroid) => {
     setSelectedSatellite(asteroid)
@@ -281,10 +287,19 @@ function App() {
   }
 
   const handleBackToEarth = () => {
+    // Set resetting flag first to prevent camera controller from interfering
+    setIsResettingCamera(true)
+    
+    // Clear state
     setIsFocusedMode(false)
     setSelectedSatellite(null)
     setCameraReachedAsteroid(false)
     setShowInfoPanel(false)
+    
+    // Reset camera to default position
+    if (cameraResetRef.current) {
+      cameraResetRef.current.resetToDefault()
+    }
   }
 
   const handleCloseInfoPanel = () => {
@@ -318,7 +333,6 @@ function App() {
         setMovementAnimationId(animId)
       } else {
         setMovementAnimationId(null)
-        console.log("[v0] Asteroid movement completed - Impact!")
         
         // Navigate to map page when asteroid reaches Earth with reduced delay
         setTimeout(() => {
@@ -375,7 +389,6 @@ function App() {
   const handleGeminiConfigSave = (apiKey) => {
     // Store the API key globally for the session
     window.geminiApiKey = apiKey;
-    console.log('Gemini API key configured successfully');
   }
 
   // Error boundary fallback
@@ -438,6 +451,9 @@ function App() {
                 movingAsteroid={movingAsteroid}
                 movementProgress={movementProgress}
                 onCameraReachedAsteroid={() => setCameraReachedAsteroid(true)}
+                resetCameraRef={cameraResetRef}
+                isResettingCamera={isResettingCamera}
+                onResetComplete={() => setIsResettingCamera(false)}
               />
               <Sidebar onSatelliteSelect={setSelectedSatellite} isOpen={sidebarOpen} />
               {selectedSatellite && cameraReachedAsteroid && showInfoPanel && <InfoPanel asteroid={selectedSatellite} onClose={handleCloseInfoPanel} />}

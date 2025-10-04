@@ -26,11 +26,9 @@ class CityService {
     }
 
     try {
-      console.log('Fetching cities from GeoNames API...');
       const cities = await this.fetchCitiesFromGeoNames();
       
       if (cities && cities.length > 0) {
-        console.log(`Successfully fetched ${cities.length} cities from GeoNames API`);
         // Cache the result
         this.cache.set(cacheKey, {
           data: cities,
@@ -125,7 +123,6 @@ class CityService {
         (parseInt(b.population) || 0) - (parseInt(a.population) || 0)
       );
 
-      console.log(`GeoNames API returned ${sortedCities.length} cities (all types)`);
       
       // Transform to our format with ALL details
       const cities = sortedCities.map(city => this.transformGeoNamesCity(city));
@@ -152,7 +149,6 @@ class CityService {
     // Add JSON format parameter
     url.searchParams.append('type', 'json');
 
-    console.log(`Making GeoNames API call: ${url.toString()}`);
 
     const response = await fetch(url.toString());
       
@@ -230,7 +226,6 @@ class CityService {
     }
 
     try {
-      console.log(`Searching GeoNames API for: ${query}`);
       
       // Search GeoNames API for cities matching the query
       // Prioritize exact matches with better search strategy
@@ -281,7 +276,6 @@ class CityService {
       });
 
       if (allCities.length === 0) {
-        console.log(`No cities found for query: ${query}`);
         return [];
       }
 
@@ -320,7 +314,6 @@ class CityService {
 
       // Limit results to top 20 for better performance and relevance
       const limitedCities = cities.slice(0, 20);
-      console.log(`Found ${limitedCities.length} cities for query: ${query} (showing top results)`);
       return limitedCities;
 
     } catch (error) {
@@ -340,7 +333,6 @@ class CityService {
   // Test API connection
   async testApiConnection() {
     try {
-      console.log('Testing GeoNames API connection...');
       const response = await this.fetchFromGeoNames('search', {
         q: 'test',
         featureClass: 'P',
@@ -348,7 +340,6 @@ class CityService {
         username: this.GEONAMES_USERNAME
       });
       
-      console.log('GeoNames API connection successful!');
       return { success: true, message: 'API connection working' };
     } catch (error) {
       console.error('GeoNames API connection failed:', error);

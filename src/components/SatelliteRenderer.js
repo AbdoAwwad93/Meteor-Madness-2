@@ -135,7 +135,6 @@ export default function SatelliteRenderer({ satellites, selectedSatellite }) {
           onClick={(e) => {
             e.stopPropagation();
             // This would trigger the parent component's satellite selection
-            console.log('Satellite clicked:', satellite.name);
           }}
         />
       ))}

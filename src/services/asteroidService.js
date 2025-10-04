@@ -43,7 +43,6 @@ class AsteroidService {
     const top = candidates.slice(0, count);
     
     // Map NEO data using calculated orbital positions (no JPL SBDB dependency)
-    console.log('📊 Using NASA NEO data with calculated orbital positions for all asteroids');
     
     const enrichedAsteroids = [];
     
@@ -54,7 +53,6 @@ class AsteroidService {
         // Calculate position using NASA NEO data and orbital mechanics
         const asteroid = this.mapNeoToAsteroidWithCalculatedPosition(neo, approach);
         enrichedAsteroids.push(asteroid);
-        console.log(`✓ ${neo.name}: Using calculated orbital position from NASA NEO data`);
       } catch (error) {
         console.warn(`Failed to process asteroid ${neo.name}, using basic mapping:`, error.message);
         // Ultimate fallback: basic asteroid mapping
@@ -63,10 +61,6 @@ class AsteroidService {
       }
     }
     
-    console.log(`\n📊 Asteroid Data Summary:`);
-    console.log(`   ✓ Calculated positions: ${enrichedAsteroids.length} asteroids`);
-    console.log(`   📡 Data source: NASA NEO API`);
-    console.log(`   🚀 Status: Fast loading, no external dependencies\n`);
     
     if (enrichedAsteroids.length === 0) {
       throw new Error('No asteroids could be loaded. All API calls failed.');

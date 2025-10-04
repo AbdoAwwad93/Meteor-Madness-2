@@ -81,23 +81,16 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
   // Also try loading the stone texture directly as a fallback
   const stoneTexture = useTexture("/textures/Asteroids/photo-stone-texture-pattern.jpg")
   
-  // Debug texture loading (removed console.logs to prevent memory issues)
+  // Texture loading for asteroid
 
   // Select texture deterministically based on asteroid ID
   const selectedTexture = useMemo(() => {
     // Try to use the direct stone texture first
     if (stoneTexture) {
-      console.log(`Using direct stone texture for asteroid ${asteroidId}:`, {
-        texture: stoneTexture,
-        hasImage: !!stoneTexture?.image,
-        imageSrc: stoneTexture?.image?.src,
-        imageLoaded: stoneTexture?.image?.complete
-      })
       return stoneTexture
     }
     
     if (!textures || textures.length === 0) {
-      console.log("No textures available for asteroid:", asteroidId)
       return null
     }
     
@@ -106,12 +99,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
     const textureIndex = Math.abs(seed) % textures.length
     const selected = textures[textureIndex]
     
-    console.log(`Selected texture ${textureIndex} for asteroid ${asteroidId}:`, {
-      texture: selected,
-      hasImage: !!selected?.image,
-      imageSrc: selected?.image?.src,
-      imageLoaded: selected?.image?.complete
-    })
     
     return selected
   }, [textures, stoneTexture, asteroidId])
@@ -155,7 +142,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
 
           // Only apply textures to non-Itokawa models
           if (selectedModel.path !== "/3D_models/Itokawa_1_1.glb") {
-            console.log("Applying texture to mesh:", child.name || "unnamed", "selectedTexture:", selectedTexture)
             
             if (!selectedTexture) {
               console.warn("No texture available for mesh:", child.name || "unnamed")
@@ -164,12 +150,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
             
             // Use texture directly (cloning might be causing issues)
             const texture = selectedTexture
-            console.log("Using texture directly:", {
-              texture: texture,
-              hasImage: !!texture?.image,
-              imageSrc: texture?.image?.src,
-              imageComplete: texture?.image?.complete
-            })
             
             // Configure texture properties
             texture.wrapS = THREE.RepeatWrapping
@@ -182,12 +162,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
 
             // For OBJ models, create a new material with proper settings
             if (selectedModel.type === "obj") {
-              console.log("Creating material with texture for OBJ model:", {
-                meshName: child.name || "unnamed",
-                texture: texture,
-                textureImage: texture?.image,
-                textureSrc: texture?.image?.src
-              })
               
               child.material = new THREE.MeshPhongMaterial({
                 map: texture,
@@ -228,19 +202,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
                 child.geometry.setAttribute('uv', new THREE.BufferAttribute(uvArray, 2))
               }
               
-              console.log("Applied texture to OBJ model mesh:", child.name || "unnamed", "texture:", texture.image?.src)
-              console.log("Final material settings:", {
-                hasTexture: !!child.material.map,
-                textureImage: child.material.map?.image?.src,
-                textureWidth: child.material.map?.image?.width,
-                textureHeight: child.material.map?.image?.height,
-                color: child.material.color.getHexString(),
-                shininess: child.material.shininess,
-                wireframe: child.material.wireframe,
-                side: child.material.side,
-                hasUVs: !!child.geometry?.attributes?.uv,
-                uvCount: child.geometry?.attributes?.uv?.count
-              })
             } else {
               // For other GLB models, apply texture normally
               child.material.map = texture
@@ -261,7 +222,6 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
             }
           } else {
             // For Itokawa model, use original material without texture
-            console.log("Using original Itokawa material without texture for mesh:", child.name || "unnamed")
           }
 
           // Add subtle emissive glow for all asteroids (only if not already set for OBJ)

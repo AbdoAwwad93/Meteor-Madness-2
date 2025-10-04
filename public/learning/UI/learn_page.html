@@ -1,14 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="./styles/learn_style.css">
-    <title>learning</title>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>Asteroid Explorer</title>
+ <link rel="stylesheet" href="./styles/learn_style.css" />
 </head>
 <body>
-    
-
-    <script src="../js/learn.js"></script>
+ <div class="ui-top-left">
+ <button id="startBtn">Start</button>
+ <button id="nextBtn" disabled>Next</button>
+ </div>
+ <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+ <!-- إضافة fflate قبل FBXLoader -->
+ <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.4/umd/index.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+ <script src="../js/learn.js"></script>
 </body>
 </html>

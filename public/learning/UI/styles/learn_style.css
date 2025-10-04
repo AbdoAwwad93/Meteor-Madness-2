@@ -1,0 +1,49 @@
+/* ===== reset ===== */
+body {
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #000814 0%, #001022 50%, #000 100%);
+  font-family: "Segoe UI", sans-serif;
+  color: white;
+}
+
+/* canvas full screen */
+canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* ===== UI ===== */
+.ui-top-left {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 10;
+  display: flex;
+  gap: 10px;
+}
+
+button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.3s, transform 0.2s;
+}
+
+button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -431,7 +431,16 @@ function initAsteroidSelection() {
     }
   });
 
-  document.getElementById('launchBtn').addEventListener('click', startSimulation);
+  document.getElementById('launchBtn').addEventListener('click', () => {
+    console.log('Launch button clicked!');
+    startSimulation();
+  });
+
+  // Emergency fallback button
+  document.getElementById('launchBtn2').addEventListener('click', () => {
+    console.log('Emergency launch button clicked!');
+    startSimulation();
+  });
   animatePreview();
 }
 

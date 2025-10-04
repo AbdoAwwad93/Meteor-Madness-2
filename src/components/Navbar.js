@@ -148,6 +148,10 @@ const SearchButton = styled.button`
 `
 
 export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen, onOpenGeminiConfig }) {
+  const handleGameClick = () => {
+    window.location.href = '/Asteriod_game/UI/asteriod_game.html'
+  }
+
   return (
     <Nav className="transparent-navbar">
       <LeftSection>
@@ -165,6 +169,13 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
       </LeftSection>
       
       <RightSection>
+        <NavButton 
+          $active={activeTab === 'game'}
+          onClick={handleGameClick}
+          style={{ backgroundColor: 'rgba(255, 0, 0, 0.1)' }}
+        >
+          Game
+        </NavButton>
         <NavButton 
           $active={activeTab === 'move' && movementControlsOpen}
           onClick={() => onToggleMovement()}

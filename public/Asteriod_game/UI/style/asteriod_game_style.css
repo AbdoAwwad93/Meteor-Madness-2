@@ -140,18 +140,32 @@ body {
 
 .launch-btn {
   margin-top: 30px;
-  padding: 15px 50px;
-  font-size: 1.5rem;
-  background: linear-gradient(135deg, #00d4ff 0%, #0077ff 100%);
+  padding: 20px 60px;
+  font-size: 2rem;
+  background: linear-gradient(135deg, #ff0000 0%, #ff6600 100%);
   color: white;
-  border: none;
+  border: 5px solid #ffff00;
   border-radius: 50px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 5px 20px rgba(0, 119, 255, 0.4);
+  box-shadow: 0 0 50px #ff0000;
   text-transform: uppercase;
   letter-spacing: 2px;
   font-weight: bold;
+  position: relative;
+  z-index: 1001;
+  display: block;
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .launch-btn:hover {

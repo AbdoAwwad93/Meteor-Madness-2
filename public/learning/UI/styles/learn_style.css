@@ -47,3 +47,81 @@ button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ===== Subtitle Styles ===== */
+.subtitle-container {
+  position: fixed;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: 80%;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+  pointer-events: none;
+}
+
+.subtitle-container.show {
+  opacity: 1;
+}
+
+.subtitle-text {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  padding: 20px 30px;
+  margin: 0 auto;
+  max-width: 900px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.subtitle-text p {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.subtitle-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Responsive subtitle */
+@media (max-width: 768px) {
+  .subtitle-container {
+    bottom: 30px;
+    max-width: 90%;
+  }
+  
+  .subtitle-text {
+    padding: 15px 20px;
+    border-radius: 10px;
+  }
+  
+  .subtitle-text p {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 480px) {
+  .subtitle-container {
+    bottom: 20px;
+    max-width: 95%;
+  }
+  
+  .subtitle-text {
+    padding: 12px 15px;
+    border-radius: 8px;
+  }
+  
+  .subtitle-text p {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}

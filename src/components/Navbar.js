@@ -152,6 +152,10 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
     window.location.href = '/Asteriod_game/UI/asteriod_game.html'
   }
 
+  const handleLearnClick = () => {
+    window.location.href = '/learning/UI/learn_page.html'
+  }
+
   return (
     <Nav className="transparent-navbar">
       <LeftSection>
@@ -169,6 +173,13 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
       </LeftSection>
       
       <RightSection>
+        <NavButton 
+          $active={activeTab === 'learn'}
+          onClick={handleLearnClick}
+          style={{ backgroundColor: 'rgba(0, 229, 255, 0.1)' }}
+        >
+          Learn
+        </NavButton>
         <NavButton 
           $active={activeTab === 'game'}
           onClick={handleGameClick}

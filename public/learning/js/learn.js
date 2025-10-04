@@ -22,6 +22,53 @@ let asteroidModels = [
   "../../3D_models/Asteroid_2a.glb"
 ];
 
+// === Sound and Loading Tracking ===
+let loadedAsteroids = 0;
+let characterLoaded = false;
+let allModelsLoaded = false;
+let introductionSound;
+
+// Initialize audio
+function initAudio() {
+  introductionSound = new Audio('../../Learn sound/Introduction.mp3');
+  introductionSound.volume = 0.7; // Set volume to 70%
+  introductionSound.preload = 'auto';
+}
+
+// Check if all models are loaded
+function checkAllModelsLoaded() {
+  if (loadedAsteroids === asteroidModels.length && characterLoaded && !allModelsLoaded) {
+    allModelsLoaded = true;
+    console.log('All models loaded! Playing introduction sound...');
+    playIntroductionSound();
+  }
+}
+
+// Play introduction sound
+function playIntroductionSound() {
+  if (introductionSound) {
+    introductionSound.play().then(() => {
+      // Show subtitle when sound starts playing
+      showSubtitle();
+    }).catch(error => {
+      console.error('Error playing introduction sound:', error);
+      // Note: Some browsers require user interaction before playing audio
+      console.log('Audio playback blocked. User interaction required.');
+      // Still show subtitle even if sound doesn't play
+      showSubtitle();
+    });
+  }
+}
+
+// Show subtitle with animation
+function showSubtitle() {
+  const subtitle = document.getElementById('subtitle');
+  if (subtitle) {
+    subtitle.classList.add('show');
+    console.log('Subtitle displayed');
+  }
+}
+
 const earthGeometry = new THREE.SphereGeometry(5, 64, 64);
 const textureLoader = new THREE.TextureLoader();
 
@@ -88,6 +135,16 @@ asteroidModels.forEach((path, i) => {
     model.position.copy(sphericalToCartesian(cfg.r, cfg.theta, cfg.phi));
     scene.add(model);
     asteroids.push(model);
+    
+    // Track loaded asteroids
+    loadedAsteroids++;
+    console.log(`Asteroid ${i + 1}/${asteroidModels.length} loaded`);
+    checkAllModelsLoaded();
+  }, undefined, (error) => {
+    console.error(`Error loading asteroid ${i + 1}:`, error);
+    // Still increment counter to prevent infinite waiting
+    loadedAsteroids++;
+    checkAllModelsLoaded();
   });
 });
 
@@ -97,16 +154,24 @@ function loadCharacter() {
   fbxLoader.load('../UI/SK_Sandy.fbx', (fbx) => {
     character = initCharacter(fbx);
     scene.add(character);
-    loadAnimations(); 
+    loadAnimations();
+    
+    // Track character loaded
+    characterLoaded = true;
+    console.log('Character loaded');
+    checkAllModelsLoaded();
   }, undefined, (error) => {
     console.error('Error loading character:', error);
+    // Still mark as loaded to prevent infinite waiting
+    characterLoaded = true;
+    checkAllModelsLoaded();
   });
 }
 
 function initCharacter(fbx) {
   const char = fbx;
-  char.scale.setScalar(.5);
-  char.position.set(0, 10, 0);
+  char.scale.setScalar(.127);
+  char.position.set(-35, -18, 1);
   char.traverse((c) => {
     if (c.isMesh) {
       if (c.material.name === 'Alpha_Body_MAT') {
@@ -179,7 +244,8 @@ function animate() {
   renderer.render(scene, camera);
 }
 
-// تحميل الشخصية
+// Initialize audio and load character
+initAudio();
 loadCharacter();
 
 animate();

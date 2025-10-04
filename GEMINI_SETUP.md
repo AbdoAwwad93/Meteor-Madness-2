@@ -160,3 +160,4 @@ For issues with the Gemini integration:
 4. Review the Gemini API documentation for any changes
 
 The integration is designed to be robust and will fall back gracefully if the AI service is unavailable, ensuring users always receive impact analysis data.
+

@@ -6,10 +6,10 @@ import { useData } from "../context/DataContext"
 
 const SidebarContainer = styled.div`
   position: fixed;
-  top: 60px;
+  top: var(--navbar-height);
   left: 0;
-  width: 320px;
-  height: calc(100vh - 60px);
+  width: var(--sidebar-width);
+  height: calc(100vh - var(--navbar-height));
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(15px);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
@@ -17,41 +17,65 @@ const SidebarContainer = styled.div`
   overflow-y: auto;
   overflow-x: hidden;
   z-index: 100;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   transform: translateX(${props => props.$isOpen ? '0' : '-100%'});
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: 768px) {
+    width: var(--sidebar-width-mobile);
+  }
+
+  @media (max-width: 480px) {
+    width: 100vw;
+  }
 `
 
 
 const Header = styled.div`
-  padding: 20px;
+  padding: var(--spacing-lg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.3);
   
   h1 {
-    font-size: 18px;
+    font-size: var(--font-lg);
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: var(--spacing-xs);
     letter-spacing: -0.02em;
     color: white;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-base);
+    }
   }
   
   p {
-    font-size: 13px;
+    font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.6);
     line-height: 1.4;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-md);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-sm);
   }
 `
 
 const Section = styled.div`
-  padding: 20px;
+  padding: var(--spacing-lg);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   
   h3 {
-    font-size: 12px;
+    font-size: var(--font-xs);
     font-weight: 600;
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-md);
     color: #0066cc;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -59,16 +83,24 @@ const Section = styled.div`
     align-items: center;
     justify-content: space-between;
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-md);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-sm);
+  }
 `
 
 const SearchBar = styled.input`
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 6px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.3);
   color: white;
-  font-size: 14px;
+  font-size: var(--font-sm);
   outline: none;
   transition: all 0.2s ease;
   font-family: inherit;
@@ -82,21 +114,26 @@ const SearchBar = styled.input`
     box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.2);
     background: rgba(0, 0, 0, 0.5);
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 `
 
 const RefreshButton = styled.button`
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: rgba(255, 255, 255, 0.8);
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: var(--spacing-xs) var(--spacing-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 500;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
   font-family: inherit;
   
   &:hover {
@@ -104,14 +141,19 @@ const RefreshButton = styled.button`
     border-color: #0066cc;
     color: #0066cc;
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 `
 
 const SatelliteItem = styled.div`
-  padding: 12px;
-  margin-bottom: 8px;
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.2s ease;
   
@@ -119,28 +161,45 @@ const SatelliteItem = styled.div`
     background: rgba(0, 102, 204, 0.1);
     border-color: #0066cc;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow);
   }
   
   .sat-name {
     font-weight: 600;
-    font-size: 14px;
-    margin-bottom: 6px;
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-xs);
     color: white;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
   }
   
   .sat-type {
-    font-size: 12px;
+    font-size: var(--font-xs);
     color: #0066cc;
-    margin-bottom: 4px;
+    margin-bottom: var(--spacing-xs);
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
   }
   
   .sat-status {
-    font-size: 11px;
+    font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.6);
     display: flex;
     align-items: center;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
   }
 `
 
@@ -156,7 +215,7 @@ const StatusIndicator = styled.span`
 
 const LoadingState = styled.div`
   text-align: center;
-  padding: 32px 20px;
+  padding: var(--spacing-xl) var(--spacing-lg);
   color: rgba(255, 255, 255, 0.6);
   
   .spinner {
@@ -166,36 +225,71 @@ const LoadingState = styled.div`
     border-top: 2px solid #0066cc;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin: 0 auto 12px;
+    margin: 0 auto var(--spacing-md);
   }
   
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-lg) var(--spacing-md);
+    
+    .spinner {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-md) var(--spacing-sm);
+    
+    .spinner {
+      width: 18px;
+      height: 18px;
+    }
+  }
 `
 
 const ErrorState = styled.div`
   text-align: center;
-  padding: 32px 20px;
+  padding: var(--spacing-xl) var(--spacing-lg);
   
   .error-icon {
-    font-size: 2rem;
-    margin-bottom: 12px;
+    font-size: var(--font-2xl);
+    margin-bottom: var(--spacing-md);
     color: #ff4757;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xl);
+    }
   }
   
   .error-title {
     font-weight: 600;
     color: #ff4757;
-    margin-bottom: 8px;
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-base);
+
+    @media (max-width: 768px) {
+      font-size: var(--font-sm);
+    }
   }
   
   .error-message {
-    font-size: 12px;
+    font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 16px;
+    margin-bottom: var(--spacing-md);
     line-height: 1.4;
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-md) var(--spacing-sm);
   }
 `
 
@@ -203,10 +297,10 @@ const RetryButton = styled.button`
   background: transparent;
   border: 1px solid rgba(255, 71, 87, 0.3);
   color: #ff4757;
-  padding: 8px 16px;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--font-xs);
   font-weight: 500;
   transition: all 0.2s ease;
   font-family: inherit;
@@ -214,6 +308,11 @@ const RetryButton = styled.button`
   &:hover {
     background: rgba(255, 71, 87, 0.1);
     border-color: #ff4757;
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
   }
 `
 

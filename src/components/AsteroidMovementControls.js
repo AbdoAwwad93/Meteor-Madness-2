@@ -7,20 +7,20 @@ import { cityService } from "../services/cityService"
 
 const ControlsContainer = styled.div`
   position: fixed;
-  top: 80px;
-  right: 10px;
+  top: calc(var(--navbar-height) + var(--spacing-lg));
+  right: var(--spacing-sm);
   background: rgba(0, 0, 0, 0.9);
   backdrop-filter: blur(15px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-md);
   color: white;
   z-index: 1000;
-  min-width: 260px;
+  min-width: var(--controls-width);
   max-width: 320px;
-  max-height: calc(100vh - 100px);
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   transform: translateX(${props => props.$isOpen ? '0' : '100%'});
   opacity: ${props => props.$isOpen ? '1' : '0'};
@@ -28,37 +28,48 @@ const ControlsContainer = styled.div`
   pointer-events: ${props => props.$isOpen ? 'auto' : 'none'};
   
   @media (max-width: 768px) {
-    right: 5px;
-    top: 70px;
-    min-width: 240px;
-    max-width: calc(100vw - 20px);
-    padding: 10px;
+    right: var(--spacing-xs);
+    top: calc(var(--navbar-height) + var(--spacing-md));
+    min-width: var(--controls-width-mobile);
+    max-width: calc(100vw - var(--spacing-md));
+    padding: var(--spacing-sm);
+    max-height: calc(100vh - 100px);
+  }
+
+  @media (max-width: 480px) {
+    right: var(--spacing-xs);
+    left: var(--spacing-xs);
+    min-width: auto;
+    max-width: none;
+    top: auto;
+    bottom: var(--spacing-lg);
+    max-height: 60vh;
   }
 `
 
 const PrimaryButton = styled.button`
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: #0066cc;
   border: 1px solid #0088ff;
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: white;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   font-family: inherit;
 
   &:hover {
     background: #0088ff;
     border-color: #00aaff;
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 102, 204, 0.4);
+    box-shadow: var(--shadow);
   }
 
   &:active {
@@ -74,17 +85,28 @@ const PrimaryButton = styled.button`
   }
 
   .icon {
-    font-size: 0.9rem;
+    font-size: var(--font-sm);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-xs);
+    font-size: var(--font-xs);
   }
 `
 
 const FormGroup = styled.div`
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-md);
   
   label {
     display: block;
-    margin-bottom: 4px;
-    font-size: 11px;
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-xs);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.8);
     text-transform: uppercase;
@@ -93,12 +115,12 @@ const FormGroup = styled.div`
   
   select, input {
     width: 100%;
-    padding: 8px 10px;
-    border-radius: 4px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-sm);
     border: 1px solid rgba(255, 255, 255, 0.2);
     background: rgba(0, 0, 0, 0.3);
     color: white;
-    font-size: 13px;
+    font-size: var(--font-xs);
     font-family: inherit;
     transition: all 0.2s ease;
     
@@ -117,26 +139,43 @@ const FormGroup = styled.div`
   option {
     background: #1a1a1a;
     color: white;
-    padding: 6px;
+    padding: var(--spacing-xs);
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-sm);
+    
+    label {
+      font-size: var(--font-xs);
+    }
+    
+    select, input {
+      padding: var(--spacing-xs) var(--spacing-sm);
+      font-size: var(--font-xs);
+    }
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: var(--spacing-xs);
   }
 `
 
 
 const SecondaryButton = styled.button`
   width: 100%;
-  padding: 10px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   font-family: inherit;
 
   &:hover {
@@ -145,23 +184,28 @@ const SecondaryButton = styled.button`
     color: #0066cc;
     transform: translateY(-1px);
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 `
 
 const DangerButton = styled.button`
   width: 100%;
-  padding: 10px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: transparent;
   border: 1px solid rgba(255, 71, 87, 0.3);
-  border-radius: 6px;
+  border-radius: var(--radius);
   color: #ff4757;
-  font-size: 13px;
+  font-size: var(--font-xs);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--spacing-xs);
   font-family: inherit;
 
   &:hover {
@@ -169,44 +213,65 @@ const DangerButton = styled.button`
     border-color: #ff4757;
     transform: translateY(-1px);
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 `
 
 
 
 
 const Header = styled.div`
-  margin-bottom: 12px;
-  padding-bottom: 8px;
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   
   .title {
     font-weight: 600;
     color: #0066cc;
-    font-size: 13px;
+    font-size: var(--font-xs);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
   
   .subtitle {
-    font-size: 11px;
+    font-size: var(--font-xs);
     color: rgba(255, 255, 255, 0.6);
-    margin-top: 3px;
+    margin-top: var(--spacing-xs);
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-sm);
+    
+    .title {
+      font-size: var(--font-xs);
+    }
+    
+    .subtitle {
+      font-size: var(--font-xs);
+    }
   }
 `
 
 const SearchContainer = styled.div`
   position: relative;
-  margin-bottom: 12px;
+  margin-bottom: var(--spacing-md);
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-sm);
+  }
 `
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 10px 12px;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.2);
   background: rgba(0, 0, 0, 0.3);
   color: white;
-  font-size: 14px;
+  font-size: var(--font-sm);
   font-family: inherit;
   transition: all 0.2s ease;
   
@@ -220,6 +285,11 @@ const SearchInput = styled.input`
   &::placeholder {
     color: rgba(255, 255, 255, 0.5);
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 `
 
 const SearchResults = styled.div`
@@ -229,15 +299,15 @@ const SearchResults = styled.div`
   right: 0;
   background: rgba(0, 0, 0, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   max-height: 200px;
   overflow-y: auto;
   z-index: 1000;
-  margin-top: 2px;
+  margin-top: var(--spacing-xs);
 `
 
 const SearchResultItem = styled.div`
-  padding: 10px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   cursor: pointer;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   transition: background-color 0.2s ease;
@@ -253,34 +323,52 @@ const SearchResultItem = styled.div`
   .city-name {
     color: white;
     font-weight: 500;
-    font-size: 14px;
+    font-size: var(--font-sm);
   }
   
   .city-country {
     color: rgba(255, 255, 255, 0.6);
-    font-size: 12px;
-    margin-top: 2px;
+    font-size: var(--font-xs);
+    margin-top: var(--spacing-xs);
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    
+    .city-name {
+      font-size: var(--font-xs);
+    }
+    
+    .city-country {
+      font-size: var(--font-xs);
+    }
   }
 `
 
 const SelectedCityInfo = styled.div`
-  margin-bottom: 10px;
-  padding: 6px;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-xs);
   background: rgba(0, 102, 204, 0.1);
   border: 1px solid rgba(0, 102, 204, 0.3);
-  border-radius: 4px;
-  font-size: 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
   
   .city-name {
     font-weight: 600;
     color: #0066cc;
-    margin-bottom: 2px;
+    margin-bottom: var(--spacing-xs);
   }
   
   .city-details {
     color: rgba(255, 255, 255, 0.7);
     display: flex;
     justify-content: space-between;
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-xs);
+    padding: var(--spacing-xs);
+    font-size: var(--font-xs);
   }
 `
 

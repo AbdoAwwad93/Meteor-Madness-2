@@ -19,23 +19,39 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const PanelContainer = styled.div`
   position: absolute;
-  top: 50%; /* Center vertically */
-  right: 20px; /* Position on right side */
-  transform: translateY(-50%); /* Center vertically */
-  width: 380px; /* Match image width */
-  max-height: calc(100vh - 100px); /* Account for navbar and margins */
+  top: 50%;
+  right: var(--spacing-lg);
+  transform: translateY(-50%);
+  width: var(--panel-width);
+  max-height: calc(100vh - 100px);
   background: rgba(15, 15, 15, 0.75);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   color: var(--text);
   overflow: hidden;
   z-index: 200;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-lg);
+
+  @media (max-width: 768px) {
+    right: var(--spacing-md);
+    width: var(--panel-width-mobile);
+    max-height: calc(100vh - 80px);
+  }
+
+  @media (max-width: 480px) {
+    right: var(--spacing-sm);
+    left: var(--spacing-sm);
+    width: auto;
+    max-height: calc(100vh - 60px);
+    top: auto;
+    bottom: var(--spacing-lg);
+    transform: none;
+  }
 `
 
 const Header = styled.div`
-  padding: 20px 24px;
+  padding: var(--spacing-lg) var(--spacing-xl);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(25, 25, 25, 0.7);
   display: flex;
@@ -45,7 +61,7 @@ const Header = styled.div`
   .title-section {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--spacing-md);
   }
   
   .asteroid-icon {
@@ -56,17 +72,31 @@ const Header = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: var(--font-xs);
     color: #000;
     font-weight: bold;
+
+    @media (max-width: 768px) {
+      width: 20px;
+      height: 20px;
+      font-size: var(--font-xs);
+    }
   }
   
   h2 {
     margin: 0;
     color: white;
-    font-size: 1.125rem;
+    font-size: var(--font-lg);
     font-weight: 600;
     letter-spacing: -0.01em;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-base);
+    }
+
+    @media (max-width: 480px) {
+      font-size: var(--font-sm);
+    }
   }
   
   .back-arrow {
@@ -79,7 +109,7 @@ const Header = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: var(--font-base);
     border-radius: 50%;
     transition: all 0.2s ease;
     
@@ -87,6 +117,20 @@ const Header = styled.div`
       background: rgba(255, 255, 255, 0.1);
       color: white;
     }
+
+    @media (max-width: 768px) {
+      width: 28px;
+      height: 28px;
+      font-size: var(--font-sm);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-md) var(--spacing-lg);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 `
 
@@ -95,39 +139,74 @@ const TabContainer = styled.div`
   display: flex;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(25, 25, 25, 0.7);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    flex-wrap: wrap;
+  }
 `
 
 const Tab = styled.button`
   flex: 1;
-  padding: 16px 20px;
+  padding: var(--spacing-md) var(--spacing-lg);
   border: none;
   background: transparent;
   color: ${(props) => (props.$active ? "white" : "rgba(255, 255, 255, 0.6)")};
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   font-weight: 500;
   transition: all 0.2s ease;
   border-bottom: 2px solid ${(props) => (props.$active ? "white" : "transparent")};
   position: relative;
+  white-space: nowrap;
+  min-width: max-content;
   
   &:hover {
     background: rgba(255, 255, 255, 0.05);
     color: ${(props) => (props.$active ? "white" : "rgba(255, 255, 255, 0.8)")};
   }
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-xs);
+    flex: 1 1 50%;
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+    flex: 1 1 100%;
+  }
 `
 
 const Content = styled.div`
-  padding: 24px;
+  padding: var(--spacing-xl);
   max-height: 400px;
   overflow-y: auto;
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-lg);
+    max-height: 300px;
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-md);
+    max-height: 250px;
+  }
 `
 
 const DataRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding: 12px 0;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md) 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   
   &:last-child {
@@ -137,39 +216,84 @@ const DataRow = styled.div`
   
   .label {
     color: rgba(255, 255, 255, 0.7);
-    font-size: 0.875rem;
+    font-size: var(--font-sm);
     font-weight: 500;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
   }
   
   .value {
     color: white;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: var(--font-sm);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    text-align: right;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-xs);
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+
+    .value {
+      text-align: left;
+    }
   }
 `
 
 const ChartContainer = styled.div`
   height: 180px;
-  margin-top: 16px;
-  padding: 12px;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
   background: rgba(25, 25, 25, 0.7);
-  border-radius: 6px;
+  border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.1);
+
+  @media (max-width: 768px) {
+    height: 150px;
+    margin-top: var(--spacing-sm);
+    padding: var(--spacing-sm);
+  }
+
+  @media (max-width: 480px) {
+    height: 120px;
+    margin-top: var(--spacing-xs);
+    padding: var(--spacing-xs);
+  }
 `
 
 const PaginationContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  padding: var(--spacing-md) var(--spacing-xl);
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(25, 25, 25, 0.7);
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-sm) var(--spacing-lg);
+  }
+
+  @media (max-width: 480px) {
+    padding: var(--spacing-xs) var(--spacing-md);
+  }
 `
 
 const PaginationDots = styled.div`
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
+
+  @media (max-width: 768px) {
+    gap: var(--spacing-xs);
+  }
 `
 
 const Dot = styled.div`
@@ -178,20 +302,25 @@ const Dot = styled.div`
   border-radius: 50%;
   background: ${(props) => (props.$active ? "white" : "rgba(255, 255, 255, 0.3)")};
   transition: all 0.2s ease;
+
+  @media (max-width: 768px) {
+    width: 6px;
+    height: 6px;
+  }
 `
 
 const NextButton = styled.button`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: var(--font-sm);
   font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 4px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
   transition: all 0.2s ease;
   
   &:hover {
@@ -200,45 +329,60 @@ const NextButton = styled.button`
   }
   
   .arrow {
-    font-size: 12px;
+    font-size: var(--font-xs);
     transition: transform 0.2s ease;
   }
   
   &:hover .arrow {
     transform: translateX(2px);
   }
+
+  @media (max-width: 768px) {
+    font-size: var(--font-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    gap: var(--spacing-xs);
+
+    .arrow {
+      font-size: var(--font-xs);
+    }
+  }
 `
 
 const ImpactSection = styled.div`
-  margin-bottom: 20px;
-  padding: 16px;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-md);
   background: rgba(255, 71, 87, 0.1);
   border: 1px solid rgba(255, 71, 87, 0.3);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   
   .title {
     color: #ff4757;
-    font-size: 1rem;
+    font-size: var(--font-base);
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: var(--spacing-md);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+
+    @media (max-width: 768px) {
+      font-size: var(--font-sm);
+      margin-bottom: var(--spacing-sm);
+    }
   }
   
   .impact-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    font-size: 0.875rem;
+    gap: var(--spacing-md);
+    font-size: var(--font-sm);
     
     .stat {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: var(--spacing-xs);
       
       .label {
         color: rgba(255, 255, 255, 0.7);
-        font-size: 0.75rem;
+        font-size: var(--font-xs);
         text-transform: uppercase;
         letter-spacing: 0.5px;
       }
@@ -246,23 +390,48 @@ const ImpactSection = styled.div`
       .value {
         color: #ff4757;
         font-weight: 600;
-        font-size: 0.875rem;
+        font-size: var(--font-sm);
+
+        @media (max-width: 768px) {
+          font-size: var(--font-xs);
+        }
       }
     }
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: var(--spacing-sm);
+      font-size: var(--font-xs);
+    }
+  }
+
+  @media (max-width: 768px) {
+    margin-bottom: var(--spacing-md);
+    padding: var(--spacing-sm);
+  }
+
+  @media (max-width: 480px) {
+    margin-bottom: var(--spacing-sm);
+    padding: var(--spacing-xs);
   }
 `
 
 const SeverityBadge = styled.div`
   display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-xs);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   background: ${props => props.$color}20;
   color: ${props => props.$color};
   border: 1px solid ${props => props.$color}40;
+
+  @media (max-width: 768px) {
+    padding: var(--spacing-xs);
+    font-size: var(--font-xs);
+  }
 `
 
 export default function InfoPanel({ asteroid, onClose }) {

@@ -56,8 +56,8 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
 
-  // Default camera position
-  const defaultCameraPosition = new THREE.Vector3(0, 0, 20)
+  // Default camera position - responsive
+  const defaultCameraPosition = new THREE.Vector3(0, 0, window.innerWidth <= 768 ? 25 : 20)
   const defaultTarget = new THREE.Vector3(0, 0, 0)
 
   // Expose reset function to parent component
@@ -489,10 +489,24 @@ export default function EarthVisualization({
 
   return (
     <Canvas
-      camera={{ position: [0, 0, 20], fov: 45 }}
-      style={{ width: "100%", height: "100%", position: "absolute", top: 0, left: 0 }}
-      gl={{ antialias: true, alpha: true }}
+      camera={{ 
+        position: [0, 0, 20], 
+        fov: window.innerWidth <= 768 ? 60 : 45 // Wider FOV on mobile for better viewing
+      }}
+      style={{ 
+        width: "100%", 
+        height: "100%", 
+        position: "absolute", 
+        top: 0, 
+        left: 0 
+      }}
+      gl={{ 
+        antialias: window.innerWidth > 768, // Disable antialias on mobile for performance
+        alpha: true,
+        powerPreference: "high-performance"
+      }}
       scene={{ background: null }}
+      dpr={window.innerWidth <= 768 ? 1 : window.devicePixelRatio} // Lower pixel ratio on mobile
     >
 
       <Lighting />

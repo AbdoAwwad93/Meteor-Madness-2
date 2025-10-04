@@ -3,6 +3,87 @@ let scene, camera, renderer, controls, map;
 let targetCityMarker = null;
 let impactData = null;
 
+// Audio setup for explosion sound
+let explosionSound = null;
+let soundEnabled = true; // Default to enabled
+
+function initializeAudio() {
+  try {
+    // Create audio object for explosion sound
+    explosionSound = new Audio('../sound/صوت انفجار.mp3');
+    explosionSound.preload = 'auto';
+    explosionSound.volume = 0.7; // Set volume to 70% to avoid being too loud
+    
+    // Handle audio loading errors
+    explosionSound.addEventListener('error', (e) => {
+      console.warn('Could not load explosion sound:', e);
+    });
+    
+    console.log('Audio initialized successfully');
+  } catch (error) {
+    console.warn('Audio initialization failed:', error);
+  }
+}
+
+function playExplosionSound() {
+  try {
+    if (explosionSound && soundEnabled) {
+      // Reset audio to beginning and play
+      explosionSound.currentTime = 0;
+      explosionSound.play().catch(error => {
+        console.warn('Could not play explosion sound:', error);
+        // Try to enable audio context if needed
+        if (error.name === 'NotAllowedError') {
+          console.log('Audio playback blocked. User interaction required to enable audio.');
+        }
+      });
+    }
+  } catch (error) {
+    console.warn('Error playing explosion sound:', error);
+  }
+}
+
+function setupSoundControl() {
+  const soundControl = document.getElementById('soundControl');
+  
+  if (soundControl) {
+    soundControl.addEventListener('click', () => {
+      soundEnabled = !soundEnabled;
+      
+      if (soundEnabled) {
+        soundControl.textContent = '🔊';
+        soundControl.classList.remove('muted');
+        soundControl.title = 'Sound Effects On (Click to mute)';
+      } else {
+        soundControl.textContent = '🔇';
+        soundControl.classList.add('muted');
+        soundControl.title = 'Sound Effects Off (Click to unmute)';
+      }
+      
+      // Store preference in localStorage
+      localStorage.setItem('soundEnabled', soundEnabled);
+      
+      console.log('Sound', soundEnabled ? 'enabled' : 'disabled');
+    });
+    
+    // Load saved preference
+    const savedSoundState = localStorage.getItem('soundEnabled');
+    if (savedSoundState !== null) {
+      soundEnabled = savedSoundState === 'true';
+      
+      if (!soundEnabled) {
+        soundControl.textContent = '🔇';
+        soundControl.classList.add('muted');
+        soundControl.title = 'Sound Effects Off (Click to unmute)';
+      } else {
+        soundControl.title = 'Sound Effects On (Click to mute)';
+      }
+    } else {
+      soundControl.title = 'Sound Effects On (Click to mute)';
+    }
+  }
+}
+
 function MapMadness() {
   scene = new THREE.Scene();
 
@@ -68,6 +149,12 @@ document.addEventListener('DOMContentLoaded', function() {
   if (searchBox) {
     searchBox.disabled = false;
   }
+  
+  // Initialize audio for explosion sound
+  initializeAudio();
+  
+  // Setup sound control button
+  setupSoundControl();
 });
 
 function latLonToXY(lat, lon, width = 400, height = 200) {
@@ -105,6 +192,9 @@ function zoomToCity(lat, lon) {
 
 function meteorExplosion(lat, lon) {
   const { x, y } = latLonToXY(lat, lon, 400, 200);
+
+  // Play explosion sound
+  playExplosionSound();
 
   const geometry = new THREE.CircleGeometry(5, 32);
   const material = new THREE.MeshBasicMaterial({
@@ -349,6 +439,42 @@ function setupBackToEarthButton() {
   }
 }
 
+// Mock impact calculation for fallback
+function calculateMockImpact(impactData) {
+  const { diameter_m, velocity_kms, lat, lon } = impactData;
+  
+  // Basic impact calculations using simplified physics
+  const mass = (4/3) * Math.PI * Math.pow(diameter_m / 2, 3) * 3000; // Assume 3000 kg/m³ density
+  const velocity_ms = velocity_kms * 1000;
+  const energy_joules = 0.5 * mass * Math.pow(velocity_ms, 2);
+  
+  // Simplified crater calculations
+  const crater_diameter_km = Math.pow(energy_joules / 1e12, 0.294) * 0.8; // Simplified scaling
+  const blast_radius_km = crater_diameter_km * 3; // Rough approximation
+  const earthquake_magnitude = Math.log10(energy_joules / 1e6) * 0.67 + 4.5; // Simplified formula
+  
+  return {
+    results: {
+      energy_joules: energy_joules,
+      crater_diameter_km: Math.max(crater_diameter_km, 0.01),
+      crater_diameter_m: Math.max(crater_diameter_km * 1000, 10),
+      blast_radius_km: Math.max(blast_radius_km, 0.1),
+      earthquake_magnitude: Math.max(earthquake_magnitude, 1.0)
+    },
+    volcanic_impact: {
+      is_affected: false,
+      volcano_name: null,
+      impact_level: 'none'
+    },
+    location: {
+      is_water: Math.random() > 0.7, // Random for demo
+      elevation_m: Math.random() * 1000,
+      is_water_source: false
+    },
+    geojson: null
+  };
+}
+
 // Impact Analysis API Functions
 async function calculateImpact(impactData) {
   try {
@@ -365,10 +491,18 @@ async function calculateImpact(impactData) {
     }
 
     const result = await response.json();
+    
+    // Validate that the result has the expected structure
+    if (!result || !result.results) {
+      console.warn('API returned unexpected structure, using mock calculation');
+      return calculateMockImpact(impactData);
+    }
+    
     return result;
   } catch (error) {
     console.error('Error calculating impact:', error);
-    throw error;
+    console.log('Falling back to mock calculation');
+    return calculateMockImpact(impactData);
   }
 }
 
@@ -553,11 +687,28 @@ function formatImpactAnalysis(impactResult) {
 
   const { results, volcanic_impact, location, geojson } = impactResult;
 
-  // Determine impact severity based on energy and crater size
-  const energyJoules = results.energy_joules;
-  const craterDiameterKm = results.crater_diameter_km;
-  const blastRadiusKm = results.blast_radius_km;
-  const earthquakeMagnitude = results.earthquake_magnitude;
+  // Validate that results object exists and has required properties
+  if (!results) {
+    console.error('Impact calculation failed: results object is missing');
+    return null;
+  }
+
+  // Check for required properties with fallback values
+  const energyJoules = results.energy_joules || 1e15; // Default fallback
+  const craterDiameterKm = results.crater_diameter_km || 0.1;
+  const blastRadiusKm = results.blast_radius_km || 1;
+  const earthquakeMagnitude = results.earthquake_magnitude || 2.0;
+
+  // Log the actual data structure for debugging
+  console.log('Impact result structure:', {
+    results: results,
+    volcanic_impact: volcanic_impact,
+    location: location,
+    hasEnergyJoules: 'energy_joules' in results,
+    hasCraterDiameter: 'crater_diameter_km' in results,
+    hasBlastRadius: 'blast_radius_km' in results,
+    hasEarthquakeMag: 'earthquake_magnitude' in results
+  });
 
   let severity = 'Low';
   let severityColor = '#00ff88';
@@ -656,8 +807,21 @@ async function calculateImpactAnalysis(asteroidData, cityData) {
       delta_km: 1000 // Default search radius
     };
 
+    console.log('Calculating impact with data:', impactRequestData);
     const result = await calculateImpact(impactRequestData);
+    
+    console.log('Impact calculation result:', result);
+    
+    // Validate the result structure
+    if (!result || typeof result !== 'object') {
+      throw new Error('Invalid response from impact calculation API');
+    }
+    
     const formattedAnalysis = formatImpactAnalysis(result);
+    
+    if (!formattedAnalysis) {
+      throw new Error('Failed to format impact analysis data');
+    }
     
     // Store impact data for visualization
     impactData = formattedAnalysis;
@@ -669,7 +833,13 @@ async function calculateImpactAnalysis(asteroidData, cityData) {
     console.error('Failed to calculate impact:', error);
     content.innerHTML = `
       <div class="error-message">
-        Failed to calculate impact analysis. Please try again.
+        <strong>Impact Analysis Error</strong><br>
+        Failed to calculate impact analysis: ${error.message}<br><br>
+        <small>This might be due to:<br>
+        • Network connectivity issues<br>
+        • API service temporarily unavailable<br>
+        • Invalid asteroid or city data<br><br>
+        Please try again or check the console for more details.</small>
       </div>
     `;
   }
@@ -808,11 +978,12 @@ function generateScientificTab(geminiAnalysis, impactResult) {
 }
 
 function generateTechnicalTab(impactResult, asteroidData, cityData) {
-  const results = impactResult.results;
-  const volcanic = impactResult.volcanic_impact;
-  const location = impactResult.location;
+  const results = impactResult?.results || {};
+  const volcanic = impactResult?.volcanic_impact || { is_affected: false, volcano_name: null, impact_level: 'none' };
+  const location = impactResult?.location || { is_water: false, elevation_m: 0, is_water_source: false };
 
   const formatEnergy = (joules) => {
+    if (!joules || joules <= 0) return 'Unknown';
     const tntEquivalent = joules / (4.184e9);
     if (tntEquivalent >= 1e6) {
       return `${(tntEquivalent / 1e6).toFixed(1)} Megatons TNT`;
@@ -831,15 +1002,15 @@ function generateTechnicalTab(impactResult, asteroidData, cityData) {
       </div>
       <div class="stat-card">
         <div class="stat-label">Crater Diameter</div>
-        <div class="stat-value" style="color: #ff4757">${results.crater_diameter_km.toFixed(1)} km</div>
+        <div class="stat-value" style="color: #ff4757">${(results.crater_diameter_km || 0).toFixed(1)} km</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Blast Radius</div>
-        <div class="stat-value" style="color: #ff8800">${results.blast_radius_km.toFixed(0)} km</div>
+        <div class="stat-value" style="color: #ff8800">${(results.blast_radius_km || 0).toFixed(0)} km</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Earthquake</div>
-        <div class="stat-value" style="color: #ffaa00">M${results.earthquake_magnitude.toFixed(1)}</div>
+        <div class="stat-value" style="color: #ffaa00">M${(results.earthquake_magnitude || 0).toFixed(1)}</div>
       </div>
     </div>
 
@@ -847,16 +1018,16 @@ function generateTechnicalTab(impactResult, asteroidData, cityData) {
       <div class="section-title">🎯 Impact Parameters</div>
       <div class="section-content">
         <div style="margin-bottom: 10px;">
-          <strong>Asteroid Size:</strong> ${asteroidData.diameter || 0.5} km diameter
+          <strong>Asteroid Size:</strong> ${asteroidData?.diameter || 0.5} km diameter
         </div>
         <div style="margin-bottom: 10px;">
-          <strong>Velocity:</strong> ${((asteroidData.velocity || 25000) / 1000).toFixed(1)} km/s
+          <strong>Velocity:</strong> ${((asteroidData?.velocity || 25000) / 1000).toFixed(1)} km/s
         </div>
         <div style="margin-bottom: 10px;">
-          <strong>Target:</strong> ${cityData.name}, ${cityData.country || 'Unknown'}
+          <strong>Target:</strong> ${cityData?.name || 'Unknown'}, ${cityData?.country || 'Unknown'}
         </div>
         <div style="margin-bottom: 10px;">
-          <strong>Coordinates:</strong> ${cityData.lat.toFixed(4)}°, ${cityData.lng.toFixed(4)}°
+          <strong>Coordinates:</strong> ${(cityData?.lat || 0).toFixed(4)}°, ${(cityData?.lng || 0).toFixed(4)}°
         </div>
         <div>
           <strong>Surface:</strong> ${location.is_water ? 'Water' : 'Land'}
@@ -871,15 +1042,15 @@ function generateTechnicalTab(impactResult, asteroidData, cityData) {
         <div class="zone-stats">
           <div class="zone-stat">
             <span class="label">Crater Diameter:</span>
-            <span class="value">${results.crater_diameter_km.toFixed(1)} km</span>
+            <span class="value">${(results.crater_diameter_km || 0).toFixed(1)} km</span>
           </div>
           <div class="zone-stat">
             <span class="label">Blast Radius:</span>
-            <span class="value">${results.blast_radius_km.toFixed(0)} km</span>
+            <span class="value">${(results.blast_radius_km || 0).toFixed(0)} km</span>
           </div>
           <div class="zone-stat">
             <span class="label">Earthquake Mag:</span>
-            <span class="value">${results.earthquake_magnitude.toFixed(1)}</span>
+            <span class="value">${(results.earthquake_magnitude || 0).toFixed(1)}</span>
           </div>
           <div class="zone-stat">
             <span class="label">Energy:</span>

@@ -54,23 +54,30 @@ function AsteroidLabel({ position, name, isSelected, onClick, isHovered }) {
   )
 }
 
-function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, asteroidId }) {
+function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, asteroidId, asteroidIndex }) {
   const modelRef = useRef()
 
-  // Select 3D model deterministically based on asteroid ID
+  // Select 3D model to ensure each model appears at least once
   const selectedModel = useMemo(() => {
     const models = [
       { path: "/3D_models/Itokawa_1_1.glb", type: "glb" },
-      { path: "/3D_models/Apophis Model 1.obj", type: "obj" }
+      { path: "/3D_models/Apophis Model 1.obj", type: "obj" },
+      { path: "/3D_models/Bennu_v20_200k.obj", type: "obj" },
+      { path: "/3D_models/Asteroid_2d.glb", type: "glb" },
+      { path: "/3D_models/Asteroid_1e.glb", type: "glb" }
     ]
-    const seed = asteroidId ? asteroidId.split("").reduce((a, b) => a + b.charCodeAt(0), 0) : 1000
-    const modelIndex = Math.abs(seed + 1) % models.length // +1 to get different selection than texture
+    
+    // First 5 asteroids get one of each model, then cycle through them
+    const modelIndex = (asteroidIndex || 0) % models.length
     return models[modelIndex]
-  }, [asteroidId])
+  }, [asteroidIndex])
 
   // Load the 3D asteroid models (hooks must be called unconditionally)
   const gltf1 = useGLTF("/3D_models/Itokawa_1_1.glb")
-  const objModel = useLoader(OBJLoader, "/3D_models/Apophis Model 1.obj")
+  const gltf2 = useGLTF("/3D_models/Asteroid_2d.glb")
+  const gltf3 = useGLTF("/3D_models/Asteroid_1e.glb")
+  const objModel1 = useLoader(OBJLoader, "/3D_models/Apophis Model 1.obj")
+  const objModel2 = useLoader(OBJLoader, "/3D_models/Bennu_v20_200k.obj")
   
   // Load all available asteroid textures
   const textures = useTexture([
@@ -110,22 +117,33 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
     // Get the appropriate model based on selection
     if (selectedModel.path === "/3D_models/Itokawa_1_1.glb" && gltf1?.scene) {
       sourceModel = gltf1.scene
-    } else if (selectedModel.path === "/3D_models/Apophis Model 1.obj" && objModel) {
-      sourceModel = objModel
+    } else if (selectedModel.path === "/3D_models/Asteroid_2d.glb" && gltf2?.scene) {
+      sourceModel = gltf2.scene
+    } else if (selectedModel.path === "/3D_models/Asteroid_1e.glb" && gltf3?.scene) {
+      sourceModel = gltf3.scene
+    } else if (selectedModel.path === "/3D_models/Apophis Model 1.obj" && objModel1) {
+      sourceModel = objModel1
+    } else if (selectedModel.path === "/3D_models/Bennu_v20_200k.obj" && objModel2) {
+      sourceModel = objModel2
     }
 
     if (sourceModel && selectedTexture) {
       const cloned = sourceModel.clone()
       
       // Scale the model to visible size for asteroids around Earth
-      // Itokawa GLB model is much larger, so scale it down more
       let scaleFactor
       if (selectedModel.path === "/3D_models/Itokawa_1_1.glb") {
         scaleFactor = 0.0002 // Much smaller for Itokawa model
+      } else if (selectedModel.path === "/3D_models/Bennu_v20_200k.obj") {
+        scaleFactor = 0.008 // Bennu model needs different scaling
+      } else if (selectedModel.path === "/3D_models/Apophis Model 1.obj") {
+        scaleFactor = 0.05 // Keep Apophis model at current size
       } else if (selectedModel.type === "obj") {
-        scaleFactor = 0.05 // Keep OBJ models at current size
+        scaleFactor = 0.05 // Default for other OBJ models
+      } else if (selectedModel.type === "glb") {
+        scaleFactor = 0.01 // Default for GLB models
       } else {
-        scaleFactor = 0.01 // Default for other GLB models
+        scaleFactor = 0.01 // Fallback
       }
       cloned.scale.setScalar(scaleFactor)
 
@@ -140,8 +158,8 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
             child.material = child.material.clone()
           }
 
-          // Only apply textures to non-Itokawa models
-          if (selectedModel.path !== "/3D_models/Itokawa_1_1.glb") {
+          // Only apply textures to non-Itokawa and non-Bennu models
+          if (selectedModel.path !== "/3D_models/Itokawa_1_1.glb" && selectedModel.path !== "/3D_models/Bennu_v20_200k.obj") {
             
             if (!selectedTexture) {
               console.warn("No texture available for mesh:", child.name || "unnamed")
@@ -220,18 +238,29 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
               )
               child.material.color.multiply(colorVariation)
             }
+          } else if (selectedModel.path === "/3D_models/Bennu_v20_200k.obj") {
+            // Special handling for Bennu model - no texture, use natural asteroid colors
+            child.material = new THREE.MeshPhongMaterial({
+              color: new THREE.Color(0x8B7355), // Natural asteroid brown color
+              shininess: 20,
+              transparent: false,
+              side: THREE.DoubleSide,
+              wireframe: false,
+              emissive: new THREE.Color(0x221100), // Subtle warm glow
+              emissiveIntensity: 0.05
+            })
           } else {
             // For Itokawa model, use original material without texture
           }
 
-          // Add subtle emissive glow for all asteroids (only if not already set for OBJ)
-          if (selectedModel.type !== "obj") {
+          // Add subtle emissive glow for all asteroids (only if not already set for OBJ or Bennu)
+          if (selectedModel.type !== "obj" && selectedModel.path !== "/3D_models/Bennu_v20_200k.obj") {
             child.material.emissive = new THREE.Color(0x332211)
             child.material.emissiveIntensity = 0.1
           }
 
-          // Consistent shininess for all asteroids (only if not already set for OBJ)
-          if (selectedModel.type !== "obj" && child.material.shininess !== undefined) {
+          // Consistent shininess for all asteroids (only if not already set for OBJ or Bennu)
+          if (selectedModel.type !== "obj" && selectedModel.path !== "/3D_models/Bennu_v20_200k.obj" && child.material.shininess !== undefined) {
             child.material.shininess = 100
           }
         }
@@ -240,7 +269,7 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
       return cloned
     }
     return null
-  }, [gltf1?.scene, objModel, selectedTexture, asteroidId, selectedModel.path, selectedModel.type])
+  }, [gltf1?.scene, gltf2?.scene, gltf3?.scene, objModel1, objModel2, selectedTexture, asteroidId, selectedModel.path, selectedModel.type])
 
   useFrame(() => {
     if (modelRef.current) {
@@ -264,7 +293,7 @@ function AsteroidModel({ position, rotation, isSelected, isHovered, onClick, ast
   )
 }
 
-function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, targetPosition }) {
+function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, targetPosition, asteroidIndex }) {
   const groupRef = useRef()
   const position = useRef(new THREE.Vector3())
   const rotation = useRef(new THREE.Euler())
@@ -376,6 +405,7 @@ function Asteroid({ asteroid, isSelected, onSelect, isMoving, movementProgress, 
         isHovered={isHovered}
         onClick={() => onSelect && onSelect(asteroid)}
         asteroidId={asteroid.id}
+        asteroidIndex={asteroidIndex}
       />
       <AsteroidLabel
         position={position.current}
@@ -401,8 +431,19 @@ export default function AsteroidRenderer({
 }) {
   // Preload models and textures for better performance
   useGLTF.preload("/3D_models/Itokawa_1_1.glb")
+  useGLTF.preload("/3D_models/Asteroid_2d.glb")
+  useGLTF.preload("/3D_models/Asteroid_1e.glb")
   useTexture.preload("/textures/Asteroids/photo-stone-texture-pattern.jpg")
   useTexture.preload("/textures/Asteroids/stone-texture.jpg")
+
+  // Create asteroid index mapping to ensure each model appears at least once
+  const asteroidIndexMap = useMemo(() => {
+    const map = new Map()
+    asteroids.forEach((asteroid, index) => {
+      map.set(asteroid.id, index)
+    })
+    return map
+  }, [asteroids])
 
   // Early return after hooks
   if (!asteroids || asteroids.length === 0) {
@@ -444,6 +485,7 @@ export default function AsteroidRenderer({
               isMoving={movingAsteroid && movingAsteroid.id === asteroid.id}
               movementProgress={movingAsteroid && movingAsteroid.id === asteroid.id ? movementProgress : undefined}
               targetPosition={movingAsteroid && movingAsteroid.id === asteroid.id ? movingAsteroid.targetPosition : undefined}
+              asteroidIndex={asteroidIndexMap.get(asteroid.id)}
             />
           </group>
         )

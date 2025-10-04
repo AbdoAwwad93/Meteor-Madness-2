@@ -187,7 +187,13 @@ function CameraController({ selectedAsteroid, asteroids, isFocusedMode, onCamera
 
         // Calculate camera position - behind the asteroid with Earth visible
         const direction = asteroidPosition.clone().normalize()
-        const distance = isFocusedMode ? 0.2 : 1.5 // Very close to asteroid for detailed view
+        
+        // Special closer distance for Bennu model (asteroid at index 2)
+        let distance = isFocusedMode ? 0.2 : 1.5 // Very close to asteroid for detailed view
+        const asteroidIndex = window.asteroidIndexMap ? window.asteroidIndexMap.get(asteroid.id) : 0
+        if (asteroidIndex === 2) { // Bennu model is at index 2
+          distance = isFocusedMode ? 0.08 : 0.5 // Much closer for Bennu model
+        }
         
         // Position camera behind the asteroid (opposite side from Earth)
         // This makes Earth visible in the background
@@ -535,7 +541,16 @@ export default function EarthVisualization({
           {/* Impact effects removed as requested */}
         </>
       )}
-      <CameraController selectedAsteroid={selectedSatellite} asteroids={asteroidsToRender} isFocusedMode={isFocusedMode} onCameraReachedAsteroid={onCameraReachedAsteroid} movingAsteroid={movingAsteroid} resetCameraRef={resetCameraRef} isResettingCamera={isResettingCamera} onResetComplete={onResetComplete} />
+      <CameraController 
+        selectedAsteroid={selectedSatellite} 
+        asteroids={asteroidsToRender} 
+        isFocusedMode={isFocusedMode} 
+        onCameraReachedAsteroid={onCameraReachedAsteroid} 
+        movingAsteroid={movingAsteroid} 
+        resetCameraRef={resetCameraRef} 
+        isResettingCamera={isResettingCamera} 
+        onResetComplete={onResetComplete} 
+      />
     </Canvas>
   )
 }

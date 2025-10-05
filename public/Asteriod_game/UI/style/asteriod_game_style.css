@@ -416,6 +416,42 @@ html, body {
   background: linear-gradient(135deg, var(--accent-tertiary) 0%, var(--info) 100%);
 }
 
+/* Back to Main Button */
+.back-to-main-btn {
+  position: absolute;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-sm);
+  background: linear-gradient(135deg, var(--warning) 0%, #ff8800 100%);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-family: inherit;
+  font-weight: 500;
+}
+
+.back-to-main-btn:hover {
+  background: linear-gradient(135deg, #ff8800 0%, var(--warning) 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-lg);
+}
+
+.back-to-main-btn:active {
+  transform: translateY(0);
+}
+
+.back-to-main-btn .icon {
+  font-size: var(--font-base);
+}
+
 /* ===== Asteroid Menu ===== */
 .asteroid-menu {
   position: fixed;
@@ -923,6 +959,13 @@ html, body {
     padding: var(--spacing-sm) var(--spacing-md);
     font-size: var(--font-sm);
   }
+  
+  .back-to-main-btn {
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-sm);
+  }
 }
 
 /* Extra Small Mobile (320px and below) */
@@ -962,20 +1005,27 @@ html, body {
     padding: var(--spacing-xs) var(--spacing-sm);
     font-size: var(--font-xs);
   }
+  
+  .back-to-main-btn {
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-xs);
+  }
 }
 
 /* Touch Device Optimizations */
 @media (hover: none) and (pointer: coarse) {
-  .nav-btn, .launch-btn, #asteroidBtn, #changeAsteroidBtn, .confirm-btn, .cancel-btn {
+  .nav-btn, .launch-btn, #asteroidBtn, #changeAsteroidBtn, .back-to-main-btn, .confirm-btn, .cancel-btn {
     min-height: 48px;
     min-width: 48px;
   }
   
-  .nav-btn:hover, .launch-btn:hover, #asteroidBtn:hover, #changeAsteroidBtn:hover {
+  .nav-btn:hover, .launch-btn:hover, #asteroidBtn:hover, #changeAsteroidBtn:hover, .back-to-main-btn:hover {
     transform: none;
   }
   
-  .nav-btn:active, .launch-btn:active, #asteroidBtn:active, #changeAsteroidBtn:active {
+  .nav-btn:active, .launch-btn:active, #asteroidBtn:active, #changeAsteroidBtn:active, .back-to-main-btn:active {
     transform: scale(0.95);
   }
 }

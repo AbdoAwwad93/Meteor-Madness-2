@@ -998,6 +998,12 @@ document.addEventListener('click', (e) => {
     hideSearchResults();
   }
 });
+
+// Back to Main functionality
+document.getElementById("backToMainBtn").addEventListener("click", () => {
+  // Navigate back to the main React app
+  window.location.href = '/';
+});
 // document.getElementById("search").addEventListener("keyup", (e) => {
 //   if (e.key === "Enter") {
 //     const query = e.target.value.toLowerCase();

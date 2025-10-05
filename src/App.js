@@ -519,7 +519,26 @@ function App() {
   }
 
   const handleToggleMovement = () => {
-    setMovementControlsOpen(!movementControlsOpen)
+    const newMovementControlsOpen = !movementControlsOpen
+    
+    // If opening movement controls and an asteroid is currently focused, reset camera to main view
+    if (newMovementControlsOpen && isFocusedMode && selectedSatellite) {
+      // Set resetting flag first to prevent camera controller from interfering
+      setIsResettingCamera(true)
+      
+      // Clear focus state
+      setIsFocusedMode(false)
+      setSelectedSatellite(null)
+      setCameraReachedAsteroid(false)
+      setShowInfoPanel(false)
+      
+      // Reset camera to default position
+      if (cameraResetRef.current) {
+        cameraResetRef.current.resetToDefault()
+      }
+    }
+    
+    setMovementControlsOpen(newMovementControlsOpen)
   }
 
   const handleGeminiConfigSave = (apiKey) => {
@@ -576,7 +595,6 @@ function App() {
             onToggleMovement={handleToggleMovement}
             sidebarOpen={sidebarOpen}
             movementControlsOpen={movementControlsOpen}
-            onOpenGeminiConfig={() => setShowGeminiConfig(true)}
           />
           <MainContent>
             <ErrorBoundary onError={() => setHasError(true)}>

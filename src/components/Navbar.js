@@ -147,7 +147,7 @@ const SearchButton = styled.button`
   }
 `
 
-export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen, onOpenGeminiConfig }) {
+export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onToggleMovement, sidebarOpen, movementControlsOpen }) {
   const handleGameClick = () => {
     window.location.href = '/Asteriod_game/UI/asteriod_game.html'
   }
@@ -176,14 +176,12 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
         <NavButton 
           $active={activeTab === 'learn'}
           onClick={handleLearnClick}
-          style={{ backgroundColor: 'rgba(0, 229, 255, 0.1)' }}
         >
           Learn
         </NavButton>
         <NavButton 
           $active={activeTab === 'game'}
           onClick={handleGameClick}
-          style={{ backgroundColor: 'rgba(255, 0, 0, 0.1)' }}
         >
           Game
         </NavButton>
@@ -193,22 +191,6 @@ export default function Navbar({ activeTab, onTabChange, onToggleSidebar, onTogg
         >
           Move
         </NavButton>
-        <IconButton 
-          onClick={() => onOpenGeminiConfig && onOpenGeminiConfig()}
-          title="Configure Gemini AI"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-            <path d="M2 17l10 5 10-5"/>
-            <path d="M2 12l10 5 10-5"/>
-          </svg>
-        </IconButton>
-        <SearchButton>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"/>
-            <path d="m21 21-4.35-4.35"/>
-          </svg>
-        </SearchButton>
       </RightSection>
     </Nav>
   )

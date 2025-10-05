@@ -818,9 +818,24 @@ function MeteorMadness() {
 }
 
 async function loadCities() {
-  const response = await fetch("../data/cities.json");
-  const cities = await response.json();
-  return cities;
+  try {
+    // Use the GeoNames API service instead of static JSON
+    const cities = await cityService.getMajorCities();
+    console.log('Cities loaded from GeoNames API:', cities.length);
+    return cities;
+  } catch (error) {
+    console.error('Failed to load cities from API, falling back to static data:', error);
+    // Fallback to static JSON if API fails
+    try {
+      const response = await fetch("../data/cities.json");
+      const cities = await response.json();
+      console.log('Cities loaded from static JSON:', cities.length);
+      return cities;
+    } catch (fallbackError) {
+      console.error('Failed to load static cities:', fallbackError);
+      return [];
+    }
+  }
 }
 
 function latLonToVector3(lat, lon, radius) {
@@ -832,20 +847,155 @@ function latLonToVector3(lat, lon, radius) {
     radius * Math.sin(phi) * Math.sin(theta)
   );
 }
-document.getElementById("searchBtn").addEventListener("click", () => {
-  const query = document.getElementById("search").value.toLowerCase();
-  const city = citiesData.find(c => c.name.toLowerCase().includes(query));
+// Search functionality with API integration
+let searchTimeout;
+let currentSearchResults = [];
 
-  if (query.trim() === "") {
+// Handle search input with debouncing
+document.getElementById("search").addEventListener("input", (e) => {
+  const query = e.target.value.trim();
+  
+  // Clear previous timeout
+  if (searchTimeout) {
+    clearTimeout(searchTimeout);
+  }
+  
+  // Hide results if query is too short
+  if (query.length < 2) {
+    hideSearchResults();
+    return;
+  }
+  
+  // Debounce search to avoid too many API calls
+  searchTimeout = setTimeout(async () => {
+    await performSearch(query);
+  }, 300);
+});
+
+// Handle Enter key in search input
+document.getElementById("search").addEventListener("keydown", async (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const query = e.target.value.trim();
+    
+    if (query === "") {
+      alert("Please enter a city name!");
+      return;
+    }
+    
+    await performSearch(query);
+  } else if (e.key === "Escape") {
+    hideSearchResults();
+  }
+});
+
+// Handle search button click
+document.getElementById("searchBtn").addEventListener("click", async () => {
+  const query = document.getElementById("search").value.trim();
+  
+  if (query === "") {
     alert("Please enter a city name!");
     return;
   }
+  
+  await performSearch(query);
+});
 
-  if (city) {
-    addCityMarker(city.lat, city.lng, city.name);
-    zoomToCity(city.lat, city.lng);
-  } else {
-    alert("City not found!");
+// Perform search using the API
+async function performSearch(query) {
+  const searchResultsDiv = document.getElementById("searchResults");
+  
+  try {
+    // Show loading state
+    searchResultsDiv.innerHTML = '<div class="search-result-item">Searching...</div>';
+    searchResultsDiv.style.display = 'block';
+    
+    // Use the cityService API search
+    const results = await cityService.searchCities(query);
+    currentSearchResults = results;
+    
+    if (results.length === 0) {
+      searchResultsDiv.innerHTML = '<div class="search-result-item">No cities found</div>';
+      return;
+    }
+    
+    // Display results
+    displaySearchResults(results);
+    
+  } catch (error) {
+    console.error('Search failed:', error);
+    
+    // Fallback to local search
+    const localResults = citiesData.filter(c => 
+      c.name.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    if (localResults.length > 0) {
+      currentSearchResults = localResults;
+      displaySearchResults(localResults);
+    } else {
+      searchResultsDiv.innerHTML = '<div class="search-result-item">No cities found</div>';
+    }
+  }
+}
+
+// Display search results
+function displaySearchResults(results) {
+  const searchResultsDiv = document.getElementById("searchResults");
+  
+  if (results.length === 0) {
+    searchResultsDiv.innerHTML = '<div class="search-result-item">No cities found</div>';
+    return;
+  }
+  
+  const resultsHtml = results.map(city => `
+    <div class="search-result-item" data-city='${JSON.stringify(city)}'>
+      <div class="city-name">${city.name}</div>
+      <div class="city-country">${city.country || city.countryCode || ''}</div>
+    </div>
+  `).join('');
+  
+  searchResultsDiv.innerHTML = resultsHtml;
+  searchResultsDiv.style.display = 'block';
+  
+  // Add click handlers to results
+  searchResultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const cityData = JSON.parse(item.dataset.city);
+      selectCity(cityData);
+    });
+  });
+}
+
+// Select a city from search results
+function selectCity(city) {
+  // Hide search results
+  hideSearchResults();
+  
+  // Update search input
+  document.getElementById("search").value = city.name;
+  
+  // Add city marker and zoom
+  const lat = city.coordinates ? city.coordinates.lat : city.lat;
+  const lng = city.coordinates ? city.coordinates.lng : city.lng;
+  
+  addCityMarker(lat, lng, city.name);
+  zoomToCity(lat, lng);
+}
+
+// Hide search results
+function hideSearchResults() {
+  const searchResultsDiv = document.getElementById("searchResults");
+  searchResultsDiv.style.display = 'none';
+  searchResultsDiv.innerHTML = '';
+  currentSearchResults = [];
+}
+
+// Hide search results when clicking outside
+document.addEventListener('click', (e) => {
+  const searchContainer = document.querySelector('.search-container');
+  if (!searchContainer.contains(e.target)) {
+    hideSearchResults();
   }
 });
 // document.getElementById("search").addEventListener("keyup", (e) => {

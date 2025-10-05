@@ -320,6 +320,49 @@ html, body {
   transform: translateY(-1px);
 }
 
+/* Search Results */
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  margin-top: var(--spacing-xs);
+  box-shadow: var(--shadow-lg);
+}
+
+.search-result-item {
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(0, 229, 255, 0.1);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.search-result-item .city-name {
+  color: var(--text);
+  font-weight: 500;
+  font-size: var(--font-sm);
+}
+
+.search-result-item .city-country {
+  color: var(--text-dim);
+  font-size: var(--font-xs);
+  margin-top: var(--spacing-xs);
+}
+
 /* ===== Main Buttons ===== */
 #asteroidBtn {
   position: absolute;

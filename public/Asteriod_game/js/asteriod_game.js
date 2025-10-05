@@ -138,7 +138,7 @@ function createSimpleMissile() {
   missileModel = missileGroup;
 }
 
-function launchKineticImpactor(asteroidTarget) {
+function launchBlastDeflection(asteroidTarget) {
   if (!asteroidTarget || isDefenseActive || !missileModel) return;
   
   // Disable defense panel while missile is active
@@ -387,7 +387,7 @@ function checkAsteroidDistance() {
   if (distanceToEarth < activationDistance && selectedDefense === 'kinetic') {
     console.log('Asteroid detected at:', distanceToEarth.toFixed(2));
     console.log('Launching missile...');
-    launchKineticImpactor(asteroid);
+    launchBlastDeflection(asteroid);
   }
 }
 
@@ -832,20 +832,35 @@ function latLonToVector3(lat, lon, radius) {
     radius * Math.sin(phi) * Math.sin(theta)
   );
 }
+document.getElementById("searchBtn").addEventListener("click", () => {
+  const query = document.getElementById("search").value.toLowerCase();
+  const city = citiesData.find(c => c.name.toLowerCase().includes(query));
 
-document.getElementById("search").addEventListener("keyup", (e) => {
-  if (e.key === "Enter") {
-    const query = e.target.value.toLowerCase();
-    const city = citiesData.find(c => c.name.toLowerCase().includes(query));
+  if (query.trim() === "") {
+    alert("Please enter a city name!");
+    return;
+  }
 
-    if (city) {
-      addCityMarker(city.lat, city.lng, city.name);
-      zoomToCity(city.lat, city.lng);
-    } else {
-      alert("City not found!");
-    }
+  if (city) {
+    addCityMarker(city.lat, city.lng, city.name);
+    zoomToCity(city.lat, city.lng);
+  } else {
+    alert("City not found!");
   }
 });
+// document.getElementById("search").addEventListener("keyup", (e) => {
+//   if (e.key === "Enter") {
+//     const query = e.target.value.toLowerCase();
+//     const city = citiesData.find(c => c.name.toLowerCase().includes(query));
+
+//     if (city) {
+//       addCityMarker(city.lat, city.lng, city.name);
+//       zoomToCity(city.lat, city.lng);
+//     } else {
+//       alert("City not found!");
+//     }
+//   }
+// });
 
 function addCityMarker(lat, lon, name) {
   earth.children = earth.children.filter(c => c.userData?.type !== "cityMarker");
@@ -1110,7 +1125,7 @@ function applyDefenseToAsteroid(asteroidTarget) {
   if (!asteroidTarget) return;
   switch(selectedDefense) {
     case 'kinetic':
-      launchKineticImpactor(asteroidTarget);
+      launchBlastDeflection(asteroidTarget);
       break;
   }
 }
@@ -1374,7 +1389,7 @@ if (typeof module !== 'undefined' && module.exports) {
     getSelectedDefense,
     applyDefenseToAsteroid,
     handleDefenseSelection,
-    launchKineticImpactor,
+    launchBlastDeflection,
     cleanupSharedGeometries,
     completeMission,
     startNewMission

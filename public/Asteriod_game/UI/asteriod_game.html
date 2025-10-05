@@ -2,10 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Meteor Madness</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"/>
+  <meta name="theme-color" content="#000000" />
+  <title>Meteor Madness - Asteroid Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style/asteriod_game_style.css">
-  <!-- <link rel="stylesheet" href="./styles/defense_menu.css"> -->
 </head>
 <body>
   <!-- شاشة اختيار النيزك -->
@@ -48,6 +49,7 @@
 
   <!-- الشاشة الرئيسية -->
   <div id="mainScreen" style="display: none;">
+    <canvas id="gameCanvas" style="position: fixed; top: 0; left: 0; z-index: 1; width: 100vw; height: 100vh;"></canvas>
     <div class="search-container">
       <input type="text" id="search" placeholder="Search for a city...">
       <button id="searchBtn">Search</button>

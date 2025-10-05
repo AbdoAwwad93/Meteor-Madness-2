@@ -396,9 +396,22 @@ function initAsteroidSelection() {
 
   const container = document.getElementById('asteroidPreview');
   previewRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  previewRenderer.setSize(400, 400);
+  
+  // Make preview responsive
+  const updatePreviewSize = () => {
+    const containerRect = container.getBoundingClientRect();
+    const size = Math.min(containerRect.width, containerRect.height, 400);
+    previewRenderer.setSize(size, size);
+    previewCamera.aspect = 1;
+    previewCamera.updateProjectionMatrix();
+  };
+  
+  updatePreviewSize();
   previewRenderer.setClearColor(0x000000, 0);
   container.appendChild(previewRenderer.domElement);
+  
+  // Add resize listener for preview
+  window.addEventListener('resize', updatePreviewSize);
 
   const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
   previewScene.add(ambLight);
@@ -452,30 +465,35 @@ function loadPreviewAsteroid(index) {
   const model = asteroidModels[index];
   document.getElementById('asteroidName').textContent = model.name;
 
+  // Create fallback asteroid immediately
+  if (!sharedGeometries.fallbackAsteroid) {
+    initSharedGeometries();
+  }
+  
+  const fallbackMaterial = new THREE.MeshStandardMaterial({
+    color: 0x888888,
+    roughness: 0.9,
+    metalness: 0.1
+  });
+  previewAsteroid = new THREE.Mesh(sharedGeometries.fallbackAsteroid, fallbackMaterial);
+  previewAsteroid.scale.set(selectedAsteroidSize, selectedAsteroidSize, selectedAsteroidSize);
+  previewScene.add(previewAsteroid);
+
   const loader = new THREE.GLTFLoader();
   loader.load(
     `../../3D_models/${model.file}`,
     (gltf) => {
+      // Remove fallback and add real model
+      previewScene.remove(previewAsteroid);
       previewAsteroid = gltf.scene;
       previewAsteroid.scale.set(selectedAsteroidSize, selectedAsteroidSize, selectedAsteroidSize);
       previewScene.add(previewAsteroid);
+      console.log('Asteroid model loaded successfully:', model.name);
     },
     undefined,
     (error) => {
-      console.error('Error loading asteroid:', error);
-      
-      if (!sharedGeometries.fallbackAsteroid) {
-        initSharedGeometries();
-      }
-      
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x888888,
-        roughness: 0.9,
-        metalness: 0.1
-      });
-      previewAsteroid = new THREE.Mesh(sharedGeometries.fallbackAsteroid, material);
-      previewAsteroid.scale.set(selectedAsteroidSize, selectedAsteroidSize, selectedAsteroidSize);
-      previewScene.add(previewAsteroid);
+      console.error('Error loading asteroid model:', error);
+      console.log('Using fallback asteroid model');
     }
   );
 }
@@ -492,6 +510,7 @@ function animatePreview() {
 }
 
 function startSimulation() {
+  console.log('Starting simulation...');
   document.getElementById('asteroidSelection').style.display = 'none';
   document.getElementById('mainScreen').style.display = 'block';
   
@@ -500,11 +519,13 @@ function startSimulation() {
   
   loadCities().then((cities) => {
     citiesData = cities;
+    console.log('Cities loaded:', cities.length);
   });
   
   loadMissileModel();
   animate();
   initAsteroidMenu();
+  console.log('Simulation started successfully');
 }
 
 const fallbackGeometry = new THREE.SphereGeometry(0.5, 8, 8);
@@ -644,10 +665,14 @@ function MeteorMadness() {
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
   camera.position.set(0, 5, 25);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+  const canvas = document.getElementById('gameCanvas');
+  renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    powerPreference: "high-performance",
+    canvas: canvas
+  });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  document.body.appendChild(renderer.domElement);
 
   controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -772,9 +797,12 @@ function MeteorMadness() {
   );
 
   window.addEventListener("resize", () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   });
 }
 

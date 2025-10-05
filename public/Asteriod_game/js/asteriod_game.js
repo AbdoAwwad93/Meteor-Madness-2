@@ -25,6 +25,8 @@ let explosionParticles = [];
 let asteroidFragments = [];
 let isDefenseActive = false;
 let selectedDefense = 'none';
+let missionState = 'selection'; // 'selection', 'playing', 'completed'
+let missionCompleted = false;
 
 const particlePool = [];
 const maxPoolSize = 50;
@@ -139,6 +141,9 @@ function createSimpleMissile() {
 function launchKineticImpactor(asteroidTarget) {
   if (!asteroidTarget || isDefenseActive || !missileModel) return;
   
+  // Disable defense panel while missile is active
+  disableDefensePanel();
+  
   isDefenseActive = true;
   activeMissile = missileModel.clone();
   
@@ -225,7 +230,9 @@ function triggerSpaceExplosion(explosionPos, asteroidTarget) {
   
   setTimeout(() => {
     isDefenseActive = false;
-  }, 500);
+    // Mission completed - asteroid destroyed
+    completeMission();
+  }, 2000);
 }
 
 function createLargeSpaceExplosion(position) {
@@ -449,11 +456,6 @@ function initAsteroidSelection() {
     startSimulation();
   });
 
-  // Emergency fallback button
-  document.getElementById('launchBtn2').addEventListener('click', () => {
-    console.log('Emergency launch button clicked!');
-    startSimulation();
-  });
   animatePreview();
 }
 
@@ -511,8 +513,17 @@ function animatePreview() {
 
 function startSimulation() {
   console.log('Starting simulation...');
+  missionState = 'playing';
+  missionCompleted = false;
+  
   document.getElementById('asteroidSelection').style.display = 'none';
   document.getElementById('mainScreen').style.display = 'block';
+  
+  // Hide change asteroid button initially
+  document.getElementById('changeAsteroidBtn').style.display = 'none';
+  
+  // Enable defense panel when starting simulation (asteroid selected)
+  enableDefensePanel();
   
   initSharedGeometries();
   MeteorMadness();
@@ -864,7 +875,15 @@ function zoomToCity(lat, lon) {
 }
 
 document.getElementById("asteroidBtn").addEventListener("click", () => {
+  if (missionCompleted) {
+    console.log('Mission completed - cannot launch asteroid');
+    return;
+  }
+  
   if (targetCityMarker && asteroid) {
+    // Disable defense panel while asteroid is moving
+    disableDefensePanel();
+    
     const worldPos = new THREE.Vector3();
     targetCityMarker.getWorldPosition(worldPos);
 
@@ -936,6 +955,11 @@ function triggerEarthImpact(impactPos) {
   
   shakeCamera();
   createShockwave(impactPos);
+  
+  // Mission completed
+  setTimeout(() => {
+    completeMission();
+  }, 3000);
 }
 
 function createEarthImpactParticles(position) {
@@ -1038,6 +1062,12 @@ function initDefenseSystem() {
 }
 
 function handleDefenseSelection(defenseType) {
+  // Only allow defense selection if mission is not completed
+  if (missionCompleted) {
+    console.log('Cannot change defense - mission completed');
+    return;
+  }
+  
   switch(defenseType) {
     case 'blast':
       console.log('Blast Deflection activated');
@@ -1053,6 +1083,22 @@ function handleDefenseSelection(defenseType) {
       break;
     default:
       console.log('Unknown defense type');
+  }
+  
+  selectedDefense = defenseType;
+  
+  // Update visual feedback
+  document.querySelectorAll('.defense-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  
+  if (defenseType !== 'none') {
+    document.querySelector(`[onclick="handleDefenseSelection('${defenseType}')"]`).classList.add('selected');
+  }
+  
+  // Apply defense to asteroid if it exists
+  if (asteroid) {
+    applyDefenseToAsteroid(asteroid, defenseType);
   }
 }
 
@@ -1106,6 +1152,221 @@ function animate() {
   renderer.render(scene, camera);
 }
 
+// Mission Management Functions
+function completeMission() {
+  missionState = 'completed';
+  missionCompleted = true;
+  
+  console.log('Mission completed!');
+  
+  // Show mission completion message
+  showMissionCompletionMessage();
+  
+  // Show change asteroid button
+  document.getElementById('changeAsteroidBtn').style.display = 'block';
+  
+  // Disable defense panel
+  disableDefensePanel();
+  
+  // Disable launch asteroid button
+  document.getElementById('asteroidBtn').disabled = true;
+  document.getElementById('asteroidBtn').style.opacity = '0.5';
+}
+
+function showMissionCompletionMessage() {
+  // Create mission completion overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'missionCompletionOverlay';
+  overlay.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+  `;
+  
+  const messageBox = document.createElement('div');
+  messageBox.style.cssText = `
+    background: var(--panel);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--accent);
+    text-align: center;
+    color: var(--text);
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+  `;
+  
+  const title = document.createElement('h2');
+  title.textContent = 'Mission Completed!';
+  title.style.cssText = `
+    color: var(--accent);
+    font-size: var(--font-3xl);
+    margin-bottom: var(--spacing-lg);
+    text-shadow: 0 0 20px rgba(0, 229, 255, 0.5);
+  `;
+  
+  const message = document.createElement('p');
+  message.textContent = selectedDefense === 'none' 
+    ? 'The asteroid has impacted Earth. Choose a new asteroid to try again with defense systems!'
+    : 'The asteroid has been successfully destroyed! Choose a new asteroid for another mission.';
+  message.style.cssText = `
+    font-size: var(--font-lg);
+    margin-bottom: var(--spacing-lg);
+    line-height: 1.6;
+  `;
+  
+  const instruction = document.createElement('p');
+  instruction.textContent = 'Click "Change Asteroid" in the top left to select a new asteroid and start a new mission.';
+  instruction.style.cssText = `
+    font-size: var(--font-base);
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xl);
+  `;
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Continue';
+  closeBtn.style.cssText = `
+    background: var(--accent);
+    color: var(--text);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius);
+    font-size: var(--font-lg);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  `;
+  
+  closeBtn.addEventListener('click', () => {
+    document.body.removeChild(overlay);
+  });
+  
+  closeBtn.addEventListener('mouseenter', () => {
+    closeBtn.style.background = 'var(--accent-secondary)';
+    closeBtn.style.transform = 'translateY(-2px)';
+  });
+  
+  closeBtn.addEventListener('mouseleave', () => {
+    closeBtn.style.background = 'var(--accent)';
+    closeBtn.style.transform = 'translateY(0)';
+  });
+  
+  messageBox.appendChild(title);
+  messageBox.appendChild(message);
+  messageBox.appendChild(instruction);
+  messageBox.appendChild(closeBtn);
+  overlay.appendChild(messageBox);
+  
+  document.body.appendChild(overlay);
+}
+
+function disableDefensePanel() {
+  const defenseOptions = document.querySelectorAll('.defense-option');
+  defenseOptions.forEach(option => {
+    option.style.opacity = '0.5';
+    option.style.pointerEvents = 'none';
+    option.style.cursor = 'not-allowed';
+    option.style.filter = 'grayscale(50%)';
+  });
+  
+  const defenseMenu = document.getElementById('defenseMenu');
+  if (defenseMenu) {
+    defenseMenu.style.opacity = '0.5';
+    defenseMenu.style.filter = 'grayscale(50%)';
+  }
+  
+  console.log('Defense panel disabled - mission in progress');
+}
+
+function enableDefensePanel() {
+  const defenseOptions = document.querySelectorAll('.defense-option');
+  defenseOptions.forEach(option => {
+    option.style.opacity = '1';
+    option.style.pointerEvents = 'auto';
+    option.style.cursor = 'pointer';
+    option.style.filter = 'none';
+  });
+  
+  const defenseMenu = document.getElementById('defenseMenu');
+  if (defenseMenu) {
+    defenseMenu.style.opacity = '1';
+    defenseMenu.style.filter = 'none';
+  }
+  
+  console.log('Defense panel enabled - ready for selection');
+}
+
+function startNewMission() {
+  missionState = 'playing';
+  missionCompleted = false;
+  
+  // Hide change asteroid button
+  document.getElementById('changeAsteroidBtn').style.display = 'none';
+  
+  // Enable defense panel for new mission
+  enableDefensePanel();
+  
+  // Enable launch asteroid button
+  document.getElementById('asteroidBtn').disabled = false;
+  document.getElementById('asteroidBtn').style.opacity = '1';
+  
+  // Reset asteroid if needed
+  if (asteroid) {
+    scene.remove(asteroid);
+    asteroid = null;
+  }
+  
+  // Reset defense state
+  isDefenseActive = false;
+  selectedDefense = 'none';
+  
+  // Load new asteroid
+  changeAsteroid();
+  
+  console.log('New mission started - defense panel enabled');
+}
+
+// Update the change asteroid button click handler
+document.addEventListener('DOMContentLoaded', () => {
+  const changeAsteroidBtn = document.getElementById('changeAsteroidBtn');
+  if (changeAsteroidBtn) {
+    changeAsteroidBtn.addEventListener('click', () => {
+      if (missionCompleted) {
+        // Show asteroid selection menu
+        document.getElementById('asteroidMenu').style.display = 'flex';
+      } else {
+        // Normal change asteroid functionality
+        document.getElementById('asteroidMenu').style.display = 'flex';
+      }
+    });
+  }
+});
+
+// Update the confirm asteroid button to start new mission
+document.addEventListener('DOMContentLoaded', () => {
+  const confirmAsteroidBtn = document.getElementById('confirmAsteroid');
+  if (confirmAsteroidBtn) {
+    confirmAsteroidBtn.addEventListener('click', () => {
+      currentAsteroidIndex = tempAsteroidIndex;
+      selectedAsteroidSize = tempAsteroidSize;
+      changeAsteroid();
+      document.getElementById('asteroidMenu').style.display = 'none';
+      
+      // If mission was completed, start new mission
+      if (missionCompleted) {
+        startNewMission();
+      }
+    });
+  }
+});
+
 initAsteroidSelection();
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -1114,6 +1375,8 @@ if (typeof module !== 'undefined' && module.exports) {
     applyDefenseToAsteroid,
     handleDefenseSelection,
     launchKineticImpactor,
-    cleanupSharedGeometries
+    cleanupSharedGeometries,
+    completeMission,
+    startNewMission
   };
 }

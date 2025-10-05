@@ -214,7 +214,7 @@ export const cities = [
 // Using the same coordinate system as the asteroid game for consistency
 export function latLngTo3D(lat, lng, radius = 5) {
   const phi = (90 - lat) * (Math.PI / 180);
-  const theta = (lng + 140) * (Math.PI / 180);
+  const theta = (lng + 185) * (Math.PI / 180);
 
   return new THREE.Vector3(
     radius * Math.sin(phi) * Math.cos(theta),

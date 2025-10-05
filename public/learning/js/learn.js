@@ -360,6 +360,12 @@ startBtn.addEventListener("click", () => {
 nextBtn.addEventListener("click", () => {
   if (asteroids.length === 0) return;
   
+  // Check if we're on the last asteroid and button says "Finish"
+  if (currentAsteroid === asteroids.length - 1 && nextBtn.textContent === "Finish") {
+    showCompletionModal();
+    return;
+  }
+  
   currentAsteroid++;
   
   if (currentAsteroid >= asteroids.length) {
@@ -373,6 +379,123 @@ nextBtn.addEventListener("click", () => {
   
   moveCameraTo(asteroids[currentAsteroid], currentAsteroid);
 });
+
+// === Completion Modal Functions ===
+function showCompletionModal() {
+  // Create modal overlay
+  const modalOverlay = document.createElement('div');
+  modalOverlay.id = 'completionModal';
+  modalOverlay.className = 'completion-modal-overlay';
+  
+  // Create modal content
+  const modalContent = document.createElement('div');
+  modalContent.className = 'completion-modal-content';
+  
+  modalContent.innerHTML = `
+    <div class="completion-header">
+      <div class="completion-icon">🎉</div>
+      <h2 class="completion-title">Congratulations!</h2>
+      <p class="completion-subtitle">You've completed the Asteroid Learning Journey</p>
+    </div>
+    
+    <div class="completion-body">
+      <p class="completion-message">
+        You've successfully explored the fascinating world of asteroids, from their formation billions of years ago to the modern efforts to protect Earth from potential impacts. 
+        You've learned about historical events like Chicxulub, Tunguska, and Chelyabinsk, and discovered how humanity is developing defense strategies for the future.
+      </p>
+      
+      <div class="completion-stats">
+        <div class="stat-item">
+          <span class="stat-number">7</span>
+          <span class="stat-label">Asteroids Explored</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">4.6B</span>
+          <span class="stat-label">Years of History</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">∞</span>
+          <span class="stat-label">Knowledge Gained</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="completion-actions">
+      <button id="backToMainBtn" class="action-btn primary-btn">
+        <span class="btn-icon">🏠</span>
+        Back to Main Scene
+      </button>
+      <button id="restartLearningBtn" class="action-btn secondary-btn">
+        <span class="btn-icon">🔄</span>
+        Restart Learning
+      </button>
+    </div>
+  `;
+  
+  modalOverlay.appendChild(modalContent);
+  document.body.appendChild(modalOverlay);
+  
+  // Add event listeners
+  document.getElementById('backToMainBtn').addEventListener('click', () => {
+    window.location.href = '../../index.html';
+  });
+  
+  document.getElementById('restartLearningBtn').addEventListener('click', () => {
+    restartLearning();
+    document.body.removeChild(modalOverlay);
+  });
+  
+  // Close modal when clicking overlay
+  modalOverlay.addEventListener('click', (e) => {
+    if (e.target === modalOverlay) {
+      document.body.removeChild(modalOverlay);
+    }
+  });
+  
+  // Animate modal appearance
+  setTimeout(() => {
+    modalOverlay.classList.add('show');
+  }, 10);
+}
+
+function restartLearning() {
+  // Reset all learning state
+  currentAsteroid = 0;
+  nextBtn.textContent = "Next";
+  nextBtn.disabled = true;
+  startBtn.disabled = false;
+  
+  // Stop current audio
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+  
+  // Hide subtitle
+  const subtitle = document.getElementById('subtitle');
+  subtitle.classList.remove('show');
+  
+  // Reset subtitle text to initial content
+  const subtitleText = subtitle.querySelector('.subtitle-text');
+  subtitleText.innerHTML = asteroidContent[0].text;
+  
+  // Reset camera to initial position
+  gsap.to(camera.position, {
+    duration: 2,
+    x: 0,
+    y: 0,
+    z: 50,
+    ease: "power2.inOut"
+  });
+  
+  gsap.to(controls.target, {
+    duration: 2,
+    x: 0,
+    y: 0,
+    z: 0,
+    ease: "power2.inOut"
+  });
+}
 
 // === Resize ===
 window.addEventListener("resize", () => {

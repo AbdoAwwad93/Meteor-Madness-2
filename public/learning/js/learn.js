@@ -243,11 +243,10 @@ function initCharacter(fbx) {
 }
 
 function loadAnimations() {
-  const animations = ['Talking (4)', 'Sitting Drinking (1)'];
+  const animations = ['Talking (4)', 'Idle.fbx'];
   const apath = '../assets/animations/';
   let actions = [];
-  let activeAction, previousAction;
-  let switched = false;
+  let activeAction;
 
   animations.forEach((name, index) => {
     fbxLoader.load(`${apath}${name}.fbx`, (fbx) => {
@@ -265,22 +264,23 @@ function loadAnimations() {
     });
   });
 
-  function switchAndStop() {
-    if (!switched) {
-      previousAction = activeAction;
-      activeAction = actions[1];
+  // Store actions in character userData for later use
+  character.userData.actions = actions;
+  character.userData.activeAction = activeAction;
+}
 
-      previousAction.fadeOut(0.5);
-      activeAction.reset().fadeIn(0.5).play();
-
-      switched = true;
-
-      activeAction.clampWhenFinished = true;
-      activeAction.loop = THREE.LoopOnce;
-    }
+// Function to reset character animation to talking
+function resetCharacterAnimation() {
+  if (character && character.userData.actions && character.userData.actions[0]) {
+    // Stop all actions
+    character.userData.actions.forEach(action => {
+      if (action) action.stop();
+    });
+    
+    // Play talking animation
+    character.userData.actions[0].reset().play();
+    character.userData.activeAction = character.userData.actions[0];
   }
-
-  setTimeout(switchAndStop, 30000);
 }
 
 function animate() {
@@ -352,8 +352,9 @@ startBtn.addEventListener("click", () => {
   if (asteroids.length === 0) return;
   startBtn.disabled = true;
   nextBtn.disabled = false;
-  currentAsteroid = 0;
-  moveCameraTo(asteroids[currentAsteroid], currentAsteroid);
+  currentAsteroid = 1; // Start from second asteroid (what is asteroid)
+  // Don't move camera, just play the audio
+  playAsteroidAudio(currentAsteroid);
 });
 
 nextBtn.addEventListener("click", () => {
